@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iFlooder Repo</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            max-width: 500px;
+            text-align: center;
+        }
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #007AFF, #5856D6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .version {
+            color: #888;
+            margin-bottom: 30px;
+            font-size: 0.9em;
+        }
+        .description {
+            color: #ccc;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+        .features {
+            text-align: left;
+            background: #1a1a1a;
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+        .features h2 {
+            font-size: 1.1em;
+            margin-bottom: 15px;
+            color: #007AFF;
+        }
+        .features ul {
+            list-style: none;
+            padding: 0;
+        }
+        .features li {
+            padding: 8px 0;
+            border-bottom: 1px solid #222;
+            color: #ccc;
+        }
+        .features li:last-child {
+            border-bottom: none;
+        }
+        .features li::before {
+            content: "- ";
+            color: #007AFF;
+            font-weight: bold;
+        }
+        .add-btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #007AFF, #5856D6);
+            color: #fff;
+            text-decoration: none;
+            padding: 16px 40px;
+            border-radius: 14px;
+            font-size: 1.1em;
+            font-weight: 600;
+            transition: opacity 0.2s;
+        }
+        .add-btn:hover {
+            opacity: 0.85;
+        }
+        .compat {
+            margin-top: 20px;
+            color: #666;
+            font-size: 0.8em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>iFlooder</h1>
+        <p class="version">v2.0.0 | iOS 14.0+</p>
+        <p class="description">
+            A powerful message flooding tweak for iMessage & SMS with full control over your spam.
+        </p>
+        <div class="features">
+            <h2>Features</h2>
+            <ul>
+                <li>Fixed message spam</li>
+                <li>Word-by-word spam</li>
+                <li>Counting mode (1, 2, 3...)</li>
+                <li>Random emoji mode (25 emojis)</li>
+                <li>Adjustable speed (0.05s to 2s)</li>
+                <li>Message limit (auto-stop)</li>
+                <li>Live counter in navbar</li>
+            </ul>
+        </div>
+        <a class="add-btn" href="https://fumzou.github.io/iflooder-repo/">Add to Sileo</a>
+        <p class="compat">Compatible with all arm64 devices on iOS 14.0 - 15.x</p>
+        <p class="compat" style="margin-top: 12px;">
+            Original author: qwertyuiop1379 | Updated by: Fumzou
+        </p>
+    </div>
+</body>
+</html>
