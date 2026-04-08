@@ -5,10 +5,10 @@ Maintainer: Fumzou
 Installed-Size: 108
 Depends: mobilesubstrate
 Filename: debs/com.qiop1379.iflooder_2.0.0_iphoneos-arm.deb
-Size: 11208
-MD5sum: 9580fed903454c6b6853ff6e3010b087
-SHA1: b2e0c7312821fa33291b97019adeb9daedb0bbfc
-SHA256: 07ac409b4b2cf71c6a42e9281e30ec6ab803a6120d5ce025e8c0067ae989d253
+Size: 12430
+MD5sum: 61bebc6a8f937a874adeaa4da3db5a45
+SHA1: f768147826118bc5055bf9f6de6b32935b5428b3
+SHA256: 60c36e803649641f5fa6c6bbc55d7d9b0980bffba3e6430d351370ca8d418df3
 Section: Tweaks
 Description: Spam messages with speed control, message limit, live counter & emoji mode.
 Author: qwertyuiop1379
@@ -22,10 +22,10 @@ Maintainer: Fumzou
 Installed-Size: 108
 Depends: mobilesubstrate
 Filename: debs/com.qiop1379.iflooder_2.0.0_iphoneos-arm64.deb
-Size: 12396
-MD5sum: fc0787d27841033a4224251a30be37ec
-SHA1: daf8db3b108c3ad6fea48653e21cc52250def62c
-SHA256: 2453c7812f0a5f08e22468671f550627194a9a74591dfeaceab6f20e59e90840
+Size: 12436
+MD5sum: e0b1555912165a8d4d3ebff9e9200a56
+SHA1: dcce3a545d71994f2932b98fe7b8923c9a093de3
+SHA256: 2f7fd99ed9fc026b6b35901fb5cc68dae58007d40f11d3d535ced0d1368cef71
 Section: Tweaks
 Description: Spam messages with speed control, message limit, live counter & emoji mode.
 Author: qwertyuiop1379
