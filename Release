@@ -1,5 +1,5 @@
 Origin: Fumzou
 Label: Fumzou's Repo
 Version: 1.0
-Architectures: iphoneos-arm
+Architectures: iphoneos-arm iphoneos-arm64
 Description: A Sileo repository for iFlooder tweak.

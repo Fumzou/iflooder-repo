@@ -15,3 +15,19 @@ Author: qwertyuiop1379
 Name: iFlooder
 Sponsor: Fumzou
 
+Package: com.qiop1379.iflooder
+Version: 2.0.0
+Architecture: iphoneos-arm64
+Maintainer: Fumzou
+Installed-Size: 108
+Depends: mobilesubstrate
+Filename: debs/com.qiop1379.iflooder_2.0.0_iphoneos-arm64.deb
+Size: 12396
+MD5sum: fc0787d27841033a4224251a30be37ec
+SHA1: daf8db3b108c3ad6fea48653e21cc52250def62c
+SHA256: 2453c7812f0a5f08e22468671f550627194a9a74591dfeaceab6f20e59e90840
+Section: Tweaks
+Description: Spam messages with speed control, message limit, live counter & emoji mode.
+Author: qwertyuiop1379
+Name: iFlooder
+Sponsor: Fumzou
