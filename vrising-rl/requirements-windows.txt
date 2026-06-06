@@ -1,0 +1,4 @@
+# Windows-only: real keyboard/mouse input for the running game.
+# Most games ignore high-level libs; DirectInput-style input is needed.
+pydirectinput>=1.0.4
+pywin32>=306

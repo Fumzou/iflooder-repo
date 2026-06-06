@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# RL artifacts
+models/*.zip
+models/**/*.zip
+logs/
+runs/
+*.tensorboard
+checkpoints/
+
+# C# / mod build output
+mod/**/bin/
+mod/**/obj/
+
+# OS
+.DS_Store
+Thumbs.db
