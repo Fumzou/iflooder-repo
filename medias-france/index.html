@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Médias France — Indice de transparence & d'indépendance</title>
+<meta name="description" content="Qui possède les médias français ? Un index citoyen, factuel et sourcé, de la propriété des médias et de leur indépendance structurelle.">
+<style>
+  :root{
+    --bg:#0b0d12; --panel:#141821; --panel2:#1b2030; --line:#262c3a;
+    --txt:#eef1f6; --muted:#9aa3b2; --accent:#4f8cff; --accent2:#7c5cff;
+    --good:#3ec98a; --mid:#f2b53b; --bad:#ff5f6d;
+    --radius:14px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);color:var(--txt);line-height:1.55;
+  }
+  a{color:var(--accent)}
+  header.hero{
+    padding:48px 20px 28px;text-align:center;
+    background:radial-gradient(900px 360px at 50% -120px,rgba(124,92,255,.22),transparent 70%);
+    border-bottom:1px solid var(--line);
+  }
+  .hero h1{
+    font-size:clamp(1.9em,4.5vw,3em);line-height:1.1;letter-spacing:-.5px;
+    background:linear-gradient(135deg,#fff,#9db8ff);-webkit-background-clip:text;
+    background-clip:text;-webkit-text-fill-color:transparent;
+  }
+  .hero p.tag{color:var(--muted);max-width:760px;margin:14px auto 0;font-size:1.05em}
+  .wrap{max-width:1180px;margin:0 auto;padding:24px 16px 80px}
+
+  /* Intro / méthode */
+  .note{
+    background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    padding:18px 20px;margin:22px 0;
+  }
+  .note h2{font-size:1.05em;margin-bottom:8px;color:#cdd6e6}
+  .note p{color:var(--muted);font-size:.95em;margin-bottom:8px}
+  .note strong{color:var(--txt)}
+  details.method summary{cursor:pointer;color:var(--accent);font-weight:600;padding:4px 0}
+  details.method ul{margin:10px 0 4px 18px;color:var(--muted);font-size:.93em}
+  details.method li{margin:5px 0}
+
+  /* Stats */
+  .stats{display:flex;flex-wrap:wrap;gap:12px;margin:20px 0}
+  .stat{flex:1;min-width:150px;background:var(--panel);border:1px solid var(--line);
+    border-radius:var(--radius);padding:16px 18px}
+  .stat .n{font-size:1.9em;font-weight:700}
+  .stat .l{color:var(--muted);font-size:.85em}
+
+  /* Controls */
+  .controls{
+    position:sticky;top:0;z-index:20;background:rgba(11,13,18,.92);
+    backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:var(--radius);
+    padding:14px;margin:18px 0;display:flex;flex-wrap:wrap;gap:10px;align-items:center;
+  }
+  .controls input[type=search]{
+    flex:1;min-width:200px;background:var(--panel2);border:1px solid var(--line);
+    color:var(--txt);padding:11px 14px;border-radius:10px;font-size:.95em;
+  }
+  .controls select{
+    background:var(--panel2);border:1px solid var(--line);color:var(--txt);
+    padding:11px 12px;border-radius:10px;font-size:.9em;
+  }
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{
+    border:1px solid var(--line);background:var(--panel2);color:var(--muted);
+    padding:8px 13px;border-radius:999px;font-size:.85em;cursor:pointer;user-select:none;
+    transition:.15s;
+  }
+  .chip:hover{border-color:var(--accent)}
+  .chip.active{background:var(--accent);border-color:var(--accent);color:#fff}
+
+  /* Cards */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}
+  .card{
+    background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    padding:18px;display:flex;flex-direction:column;gap:10px;transition:.15s;
+  }
+  .card:hover{border-color:#3a455f;transform:translateY(-2px)}
+  .card .top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+  .card h3{font-size:1.15em}
+  .card .outlets{color:var(--muted);font-size:.85em}
+  .badge{
+    font-size:.72em;font-weight:700;padding:4px 9px;border-radius:999px;white-space:nowrap;
+    text-transform:uppercase;letter-spacing:.4px;
+  }
+  .b-billio{background:rgba(255,95,109,.15);color:#ff8a93;border:1px solid rgba(255,95,109,.4)}
+  .b-public{background:rgba(79,140,255,.15);color:#9db8ff;border:1px solid rgba(79,140,255,.4)}
+  .b-indep{background:rgba(62,201,138,.15);color:#7fe3b4;border:1px solid rgba(62,201,138,.4)}
+  .b-protege{background:rgba(242,181,59,.15);color:#ffd27d;border:1px solid rgba(242,181,59,.4)}
+
+  .row{font-size:.9em}
+  .row .k{color:var(--muted);font-size:.82em;text-transform:uppercase;letter-spacing:.4px}
+  .row .v{color:var(--txt)}
+
+  .score{margin-top:4px}
+  .score .label{display:flex;justify-content:space-between;font-size:.82em;color:var(--muted);margin-bottom:5px}
+  .bar{height:8px;border-radius:999px;background:var(--panel2);overflow:hidden}
+  .bar > i{display:block;height:100%;border-radius:999px}
+  .card .src{font-size:.78em;color:var(--muted);margin-top:2px}
+  .card .src a{color:var(--accent)}
+
+  footer{border-top:1px solid var(--line);padding:30px 16px;color:var(--muted);font-size:.85em;text-align:center}
+  footer .disc{max-width:780px;margin:0 auto 14px;background:var(--panel);border:1px solid var(--line);
+    border-radius:var(--radius);padding:16px 18px;text-align:left}
+  .empty{text-align:center;color:var(--muted);padding:50px 0}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <h1>Qui possède les médias en France&nbsp;?</h1>
+  <p class="tag">Un index <strong>citoyen, factuel et sourcé</strong> de la propriété des médias français
+  et de leur <strong>indépendance structurelle</strong>. Les faits, pour que chacun se fasse son opinion.</p>
+</header>
+
+<div class="wrap">
+
+  <div class="note">
+    <h2>📌 Comment lire cet index</h2>
+    <p>Ce site ne dit pas qu'un média « ment » ou « dit vrai ». Ce serait un jugement invérifiable
+    article par article — et juridiquement risqué. Il documente ce qui est <strong>vérifiable</strong> :
+    <strong>qui détient le capital</strong>, <strong>quels sont les autres intérêts économiques du propriétaire</strong>
+    (et donc ses conflits d'intérêts potentiels), et <strong>quelles garanties d'indépendance</strong> existent.</p>
+    <p>L'« indice d'indépendance structurelle » mesure le <strong>risque d'influence du propriétaire</strong>
+    sur la ligne éditoriale — pas la qualité d'un reportage donné. Un score bas n'implique pas « propagande »,
+    et un score haut ne garantit pas l'absence d'erreurs.</p>
+    <details class="method">
+      <summary>Voir la méthodologie & les critères de notation</summary>
+      <ul>
+        <li><strong>Structure du capital</strong> — possédé par un milliardaire / un groupe industriel,
+        protégé (fonds de dotation), coopératif/associatif, financé par les lecteurs, ou public.</li>
+        <li><strong>Conflits d'intérêts du propriétaire</strong> — le propriétaire dépend-il de
+        commandes publiques, de la régulation de l'État, de marchés sensibles (défense, BTP, télécoms, luxe…)&nbsp;?</li>
+        <li><strong>Garanties d'indépendance</strong> — société de journalistes, droit d'agrément du
+        directeur, charte, absence de publicité, financement majoritaire par les lecteurs.</li>
+        <li><strong>Indice (0–100)</strong> — synthèse des points ci-dessus. Plus l'indépendance vis-à-vis
+        d'un intérêt privé ou d'État est forte, plus l'indice est élevé. <strong>C'est une estimation, pas une vérité absolue.</strong></li>
+      </ul>
+    </details>
+  </div>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="controls">
+    <input type="search" id="q" placeholder="🔎 Rechercher un média, un propriétaire, un groupe…" aria-label="Recherche">
+    <select id="sort" aria-label="Trier">
+      <option value="indep-desc">Indépendance ↓ (la + indépendante d'abord)</option>
+      <option value="indep-asc">Indépendance ↑ (la + sous influence d'abord)</option>
+      <option value="name">Nom (A→Z)</option>
+    </select>
+    <div class="chips" id="chips"></div>
+  </div>
+
+  <div class="grid" id="grid"></div>
+  <div class="empty" id="empty" style="display:none">Aucun média ne correspond à ta recherche.</div>
+
+</div>
+
+<footer>
+  <div class="disc">
+    <strong>Avertissement.</strong> Les données de propriété proviennent de sources publiques (voir liens
+    sur chaque fiche et ci-dessous) et reflètent la situation connue en 2025‑2026 ; elles évoluent.
+    Les « indices d'indépendance » sont une lecture <em>indicative</em> fondée sur la structure du capital,
+    pas un jugement sur la véracité d'un contenu précis ni sur l'intégrité personnelle d'un journaliste.
+    Ce projet vise la <strong>transparence et l'éducation aux médias</strong>. Repérée une erreur&nbsp;?
+    Les corrections sourcées sont bienvenues.
+  </div>
+  <p>Sources de référence&nbsp;:
+    « <a href="https://www.monde-diplomatique.fr/cartes/PPA" target="_blank" rel="noopener">Médias français, qui possède quoi ?</a> » (Le Monde diplomatique &amp; Acrimed),
+    <a href="https://www.acrimed.org/" target="_blank" rel="noopener">Acrimed</a>,
+    <a href="https://www.oxfamfrance.org/" target="_blank" rel="noopener">Oxfam France</a>,
+    <a href="https://fondspresselibre.org/" target="_blank" rel="noopener">Fonds pour une presse libre</a>,
+    <a href="https://basta.media/" target="_blank" rel="noopener">Basta!</a>
+  </p>
+  <p style="margin-top:10px">Index citoyen ouvert — données factuelles, à vérifier et améliorer collectivement.</p>
+</footer>
+
+<script>
+/* ============================================================================
+   DONNÉES — structure de propriété des principaux médias français (2025-2026).
+   Champs :
+     name      : média / marque(s)
+     outlets   : titres regroupés sous le même propriétaire
+     owner     : propriétaire / actionnaire de contrôle
+     group     : groupe / holding
+     type      : "billionaire" | "industrial" | "protege" | "indep" | "public"
+     interests : autres intérêts économiques du propriétaire (conflits potentiels)
+     guarantees: garanties d'indépendance connues
+     indep     : indice d'indépendance structurelle (0-100, indicatif)
+     src       : {label,url} source publique vérifiable
+   Les valeurs "indep" sont des estimations transparentes, pas des vérités.
+============================================================================ */
+const DATA = [
+  {
+    name:"CNews · Canal+ · C8", outlets:"CNews, Canal+, C8, Europe 1, RFM, Le Journal du Dimanche, Prisma Media (Gala, Femme Actuelle…)",
+    owner:"Vincent Bolloré", group:"Vivendi / Canal+ / Lagardère", type:"billionaire",
+    interests:"Logistique & transport, publicité (Havas), édition (Hachette). Empire industriel diversifié, ligne éditoriale très marquée.",
+    guarantees:"Aucune garantie formelle d'indépendance ; nombreux départs de rédactions documentés.",
+    indep:12,
+    src:{label:"Monde diplo — Qui possède quoi", url:"https://www.monde-diplomatique.fr/cartes/PPA"}
+  },
+  {
+    name:"TF1 · LCI", outlets:"TF1, LCI, TMC, TFX, TF1 Info",
+    owner:"Famille Bouygues", group:"Groupe Bouygues / TF1", type:"industrial",
+    interests:"BTP & travaux publics (marchés publics de l'État), télécoms (Bouygues Telecom, régulé par l'État).",
+    guarantees:"Chaîne privée historique ; pas de structure d'indépendance du capital.",
+    indep:25,
+    src:{label:"Monde diplo — Qui possède quoi", url:"https://www.monde-diplomatique.fr/cartes/PPA"}
+  },
+  {
+    name:"Le Figaro", outlets:"Le Figaro, Le Figaro Magazine, TV Magazine",
+    owner:"Famille Dassault", group:"Groupe Dassault", type:"billionaire",
+    interests:"Aviation & armement (Dassault Aviation) — fortement dépendant des commandes et exportations d'armes validées par l'État.",
+    guarantees:"Société des journalistes existante ; capital contrôlé par la famille.",
+    indep:22,
+    src:{label:"Monde diplo — Qui possède quoi", url:"https://www.monde-diplomatique.fr/cartes/PPA"}
+  },
+  {
+    name:"Le Monde", outlets:"Le Monde, Télérama, Le Nouvel Obs, Courrier International, Le HuffPost",
+    owner:"Xavier Niel (avec M. Pigasse, D. Kretinsky)", group:"Groupe Le Monde", type:"billionaire",
+    interests:"Télécoms (Iliad/Free, régulé par l'Arcep/État), nombreux investissements (Station F…).",
+    guarantees:"Pôle d'indépendance, droit d'agrément du directeur par la rédaction, société des rédacteurs — garanties parmi les plus fortes pour un titre détenu par des milliardaires.",
+    indep:55,
+    src:{label:"Monde diplo — Qui possède quoi", url:"https://www.monde-diplomatique.fr/cartes/PPA"}
+  },
+  {
+    name:"Les Échos · Le Parisien", outlets:"Les Échos, Le Parisien-Aujourd'hui en France, Radio Classique, Paris Match, L'Opinion, L'Agefi",
+    owner:"Bernard Arnault", group:"LVMH", type:"billionaire",
+    interests:"Luxe (LVMH, 1ʳᵉ fortune de France). A racheté plusieurs titres de presse éco en 2024-2025 → quasi-monopole sur la presse économique.",
+    guarantees:"Sociétés de journalistes ; pas de protection du capital.",
+    indep:20,
+    src:{label:"Monde diplo — Qui possède quoi", url:"https://www.monde-diplomatique.fr/cartes/PPA"}
+  },
+  {
+    name:"BFM TV · RMC", outlets:"BFM TV, RMC, La Provence, La Tribune Dimanche",
+    owner:"Rodolphe Saadé", group:"CMA CGM (Altice Media)", type:"billionaire",
+    interests:"Transport maritime mondial (CMA CGM) — secteur stratégique, aides et concessions publiques.",
+    guarantees:"Rachat récent (ex-Drahi) ; pas de structure d'indépendance du capital.",
+    indep:23,
+    src:{label:"Monde diplo — Qui possède quoi", url:"https://www.monde-diplomatique.fr/cartes/PPA"}
+  },
+  {
+    name:"Marianne · magazines", outlets:"Marianne, Elle, Télé 7 Jours (Czech Media Invest), participation TF1",
+    owner:"Daniel Kretinsky", group:"CMI / Czech Media Invest", type:"billionaire",
+    interests:"Énergie (gaz, charbon — EPH), distribution, investissements transeuropéens.",
+    guarantees:"Variable selon les titres.",
+    indep:28,
+    src:{label:"Monde diplo — Qui possède quoi", url:"https://www.monde-diplomatique.fr/cartes/PPA"}
+  },
+  {
+    name:"L'Équipe", outlets:"L'Équipe, France Football",
+    owner:"Famille Amaury", group:"Groupe Amaury (ASO)", type:"industrial",
+    interests:"Organisation d'événements sportifs (Tour de France via ASO) — conflits sur la couverture du sport business.",
+    guarantees:"Capital familial.",
+    indep:35,
+    src:{label:"Monde diplo — Qui possède quoi", url:"https://www.monde-diplomatique.fr/cartes/PPA"}
+  },
+  {
+    name:"Libération", outlets:"Libération",
+    owner:"Fonds de dotation pour une presse indépendante", group:"Capital protégé (ex-Drahi)", type:"protege",
+    interests:"Patrick Drahi (télécoms) a transféré ses parts à un fonds de dotation censé garantir l'indépendance.",
+    guarantees:"Capital logé dans un fonds de dotation à but non lucratif ; modèle débattu mais protecteur.",
+    indep:60,
+    src:{label:"Monde diplo — Qui possède quoi", url:"https://www.monde-diplomatique.fr/cartes/PPA"}
+  },
+  {
+    name:"France Télévisions", outlets:"France 2, France 3, France 5, franceinfo",
+    owner:"État (audiovisuel public)", group:"Service public", type:"public",
+    interests:"Financement public ; indépendant des milliardaires, mais débats récurrents sur l'indépendance vis-à-vis du pouvoir politique et le financement.",
+    guarantees:"Cahier des charges, ARCOM, instances internes ; gouvernance publique.",
+    indep:62,
+    src:{label:"Monde diplo — Qui possède quoi", url:"https://www.monde-diplomatique.fr/cartes/PPA"}
+  },
+  {
+    name:"Radio France", outlets:"France Inter, France Culture, franceinfo, France Bleu",
+    owner:"État (audiovisuel public)", group:"Service public", type:"public",
+    interests:"Financement public. Indépendant des intérêts privés ; même débat sur le lien à l'État.",
+    guarantees:"Statut public, ARCOM, sociétés de rédacteurs.",
+    indep:64,
+    src:{label:"Monde diplo — Qui possède quoi", url:"https://www.monde-diplomatique.fr/cartes/PPA"}
+  },
+  {
+    name:"Arte", outlets:"Arte France",
+    owner:"Chaîne publique franco-allemande", group:"Service public", type:"public",
+    interests:"Financement public binational ; pas d'actionnaire privé.",
+    guarantees:"Gouvernance publique franco-allemande.",
+    indep:68,
+    src:{label:"Monde diplo — Qui possède quoi", url:"https://www.monde-diplomatique.fr/cartes/PPA"}
+  },
+  {
+    name:"Mediapart", outlets:"Mediapart",
+    owner:"Société pour l'indépendance de Mediapart (à but non lucratif)", group:"Indépendant", type:"indep",
+    interests:"Aucun actionnaire industriel. Financé à 100% par les abonnés, sans publicité ni subvention à la pluralité.",
+    guarantees:"Capital « verrouillé » dans un fonds à but non lucratif et non revendable ; pas de pub.",
+    indep:95,
+    src:{label:"Liste médias indépendants", url:"https://lesautresidees.fr/medias-independants/"}
+  },
+  {
+    name:"Le Canard enchaîné", outlets:"Le Canard enchaîné",
+    owner:"Ses journalistes & salariés", group:"Indépendant", type:"indep",
+    interests:"Aucun actionnaire extérieur. Pas de publicité. Modèle inchangé depuis 1915.",
+    guarantees:"Capital détenu par la rédaction ; aucune pub ; autofinancement par les ventes.",
+    indep:96,
+    src:{label:"Liste médias indépendants", url:"https://lesautresidees.fr/medias-independants/"}
+  },
+  {
+    name:"Blast", outlets:"Blast",
+    owner:"Lecteurs / dons (fondé par Denis Robert)", group:"Indépendant", type:"indep",
+    interests:"Financé par les dons et abonnements du public ; pas d'actionnaire milliardaire.",
+    guarantees:"Modèle participatif ; indépendance du capital.",
+    indep:90,
+    src:{label:"Liste médias indépendants", url:"https://lesautresidees.fr/medias-independants/"}
+  },
+  {
+    name:"Off-Investigation", outlets:"Off-Investigation",
+    owner:"Lecteurs / dons", group:"Indépendant", type:"indep",
+    interests:"Média d'enquête financé par le public ; pas d'actionnaire privé.",
+    guarantees:"Financement participatif.",
+    indep:90,
+    src:{label:"Off-Investigation", url:"https://www.off-investigation.fr/"}
+  },
+  {
+    name:"Reflets.info", outlets:"Reflets",
+    owner:"Abonnés", group:"Indépendant", type:"indep",
+    interests:"Investigation numérique financée uniquement par ses abonnés.",
+    guarantees:"100% abonnés, pas de pub.",
+    indep:90,
+    src:{label:"Liste médias indépendants", url:"https://lesautresidees.fr/medias-independants/"}
+  },
+  {
+    name:"Arrêt sur images", outlets:"Arrêt sur images",
+    owner:"Abonnés / société de journalistes", group:"Indépendant", type:"indep",
+    interests:"Critique des médias, financé par abonnement, sans pub.",
+    guarantees:"Capital majoritairement détenu par l'équipe ; pas de pub.",
+    indep:92,
+    src:{label:"Liste médias indépendants", url:"https://lesautresidees.fr/medias-independants/"}
+  },
+  {
+    name:"Alternatives Économiques", outlets:"Alternatives Économiques",
+    owner:"Coopérative (SCOP) — salariés & lecteurs", group:"Indépendant / coopératif", type:"indep",
+    interests:"Société coopérative détenue par ses salariés et lecteurs.",
+    guarantees:"Structure coopérative (SCOP).",
+    indep:90,
+    src:{label:"Liste médias indépendants", url:"https://lesautresidees.fr/medias-independants/"}
+  },
+  {
+    name:"Reporterre", outlets:"Reporterre",
+    owner:"Association à but non lucratif / dons", group:"Indépendant", type:"indep",
+    interests:"Média écologie, financé par les dons, sans pub ni actionnaire.",
+    guarantees:"Association à but non lucratif ; gratuit, financé par les lecteurs.",
+    indep:91,
+    src:{label:"Liste médias indépendants", url:"https://lesautresidees.fr/medias-independants/"}
+  },
+  {
+    name:"Disclose", outlets:"Disclose",
+    owner:"Association à but non lucratif / dons", group:"Indépendant", type:"indep",
+    interests:"Journalisme d'investigation d'intérêt public, sans but lucratif.",
+    guarantees:"Structure à but non lucratif, financée par dons et fondations.",
+    indep:91,
+    src:{label:"Liste médias indépendants", url:"https://lesautresidees.fr/medias-independants/"}
+  },
+  {
+    name:"Basta! · L'Âge de faire", outlets:"Basta!",
+    owner:"Association / lecteurs", group:"Indépendant", type:"indep",
+    interests:"Média social et écologique financé par les lecteurs et fondations.",
+    guarantees:"Association à but non lucratif.",
+    indep:89,
+    src:{label:"Basta!", url:"https://basta.media/"}
+  },
+  {
+    name:"StreetPress", outlets:"StreetPress",
+    owner:"Indépendant / lecteurs & dons", group:"Indépendant", type:"indep",
+    interests:"Média d'enquête sociale, financé par les lecteurs.",
+    guarantees:"Indépendance du capital ; financement participatif.",
+    indep:88,
+    src:{label:"Liste médias indépendants", url:"https://lesautresidees.fr/medias-independants/"}
+  },
+  {
+    name:"Mediacités", outlets:"Mediacités (Lille, Lyon, Nantes, Toulouse)",
+    owner:"Journalistes / abonnés", group:"Indépendant", type:"indep",
+    interests:"Investigation locale détenue par ses journalistes, financée par abonnement.",
+    guarantees:"Capital majoritairement aux journalistes ; pas de pub.",
+    indep:90,
+    src:{label:"Liste médias indépendants", url:"https://lesautresidees.fr/medias-independants/"}
+  }
+];
+
+/* ---------- rendu ---------- */
+const TYPES = {
+  all:      {label:"Tous"},
+  billionaire:{label:"Milliardaire", cls:"b-billio"},
+  industrial:{label:"Groupe industriel", cls:"b-billio"},
+  protege:  {label:"Capital protégé", cls:"b-protege"},
+  public:   {label:"Service public", cls:"b-public"},
+  indep:    {label:"Indépendant / citoyen", cls:"b-indep"},
+};
+const typeLabel = t => (TYPES[t]||{}).label || t;
+const typeCls   = t => (TYPES[t]||{}).cls || "b-public";
+const scoreColor = v => v>=70 ? "var(--good)" : v>=45 ? "var(--mid)" : "var(--bad)";
+
+const grid=document.getElementById('grid');
+const emptyEl=document.getElementById('empty');
+const qEl=document.getElementById('q');
+const sortEl=document.getElementById('sort');
+const chipsEl=document.getElementById('chips');
+let activeType='all';
+
+// chips de filtre
+['all','indep','public','protege','industrial','billionaire'].forEach(t=>{
+  const c=document.createElement('span');
+  c.className='chip'+(t==='all'?' active':'');
+  c.textContent=typeLabel(t);
+  c.onclick=()=>{activeType=t;document.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));c.classList.add('active');render();};
+  chipsEl.appendChild(c);
+});
+
+// stats
+(function(){
+  const s=document.getElementById('stats');
+  const billio=DATA.filter(d=>d.type==='billionaire'||d.type==='industrial').length;
+  const indep=DATA.filter(d=>d.type==='indep').length;
+  const avg=Math.round(DATA.reduce((a,d)=>a+d.indep,0)/DATA.length);
+  const items=[
+    {n:DATA.length,l:"médias / groupes référencés"},
+    {n:billio,l:"détenus par un milliardaire ou groupe industriel"},
+    {n:indep,l:"indépendants / financés par les citoyens"},
+    {n:avg,l:"indice d'indépendance moyen / 100"},
+  ];
+  s.innerHTML=items.map(i=>`<div class="stat"><div class="n">${i.n}</div><div class="l">${i.l}</div></div>`).join('');
+})();
+
+function render(){
+  const q=qEl.value.trim().toLowerCase();
+  let list=DATA.filter(d=>{
+    if(activeType!=='all' && d.type!==activeType) return false;
+    if(!q) return true;
+    return (d.name+d.outlets+d.owner+d.group+d.interests).toLowerCase().includes(q);
+  });
+  const sort=sortEl.value;
+  list.sort((a,b)=>{
+    if(sort==='name') return a.name.localeCompare(b.name,'fr');
+    if(sort==='indep-asc') return a.indep-b.indep;
+    return b.indep-a.indep;
+  });
+
+  grid.innerHTML='';
+  emptyEl.style.display=list.length?'none':'block';
+  for(const d of list){
+    const el=document.createElement('article');
+    el.className='card';
+    el.innerHTML=`
+      <div class="top">
+        <div>
+          <h3>${d.name}</h3>
+          <div class="outlets">${d.outlets}</div>
+        </div>
+        <span class="badge ${typeCls(d.type)}">${typeLabel(d.type)}</span>
+      </div>
+      <div class="row"><div class="k">Propriétaire</div><div class="v">${d.owner}${d.group?` · <span style="color:var(--muted)">${d.group}</span>`:''}</div></div>
+      <div class="row"><div class="k">Autres intérêts / conflits potentiels</div><div class="v">${d.interests}</div></div>
+      <div class="row"><div class="k">Garanties d'indépendance</div><div class="v">${d.guarantees}</div></div>
+      <div class="score">
+        <div class="label"><span>Indice d'indépendance structurelle</span><span style="color:${scoreColor(d.indep)};font-weight:700">${d.indep}/100</span></div>
+        <div class="bar"><i style="width:${d.indep}%;background:${scoreColor(d.indep)}"></i></div>
+      </div>
+      <div class="src">Source : <a href="${d.src.url}" target="_blank" rel="noopener">${d.src.label}</a></div>
+    `;
+    grid.appendChild(el);
+  }
+}
+qEl.addEventListener('input',render);
+sortEl.addEventListener('change',render);
+render();
+</script>
+</body>
+</html>
