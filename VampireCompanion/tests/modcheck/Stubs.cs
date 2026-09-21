@@ -1,6 +1,12 @@
-// Stand-ins for the V Rising / Unity types the collector uses, shaped from the signatures
-// observed in Eclipse and Bloodcraft. Compiling Character.cs against these proves the
-// collector's own logic; it does not prove the real assemblies match these shapes.
+// Stand-ins for the V Rising / Unity types the collector uses.
+//
+// Namespaces, field names and field widths below were read out of the real
+// VampireReferenceAssemblies 1.1.12-r99041-b2 with MetadataLoadContext, not guessed.
+// Compiling Character.cs against these proves the collector's own logic; only building
+// src/Mod against the reference assemblies proves the game really has these members.
+//
+// Three stubs stay deliberately synthetic, because they exist to exercise a code path
+// rather than to mirror a component; each one says so where it is declared.
 using System.Collections.Generic;
 
 namespace Unity.Entities
@@ -47,12 +53,27 @@ namespace ProjectM
     using Stunlock.Core;
     using Unity.Entities;
 
-    public struct ModifiableFloat { public float _Value; public static ModifiableFloat Of(float v) => new ModifiableFloat { _Value = v }; }
-    public struct ModifiableBool { public bool _Value; }
-    public struct NetworkedEntity { public Entity _Entity; }
+    // The real wrappers carry a public _Value field plus a Value property over it; the
+    // collector reflects on the field, which is why the field is what matters here.
+    public struct ModifiableFloat
+    {
+        public float _Value;
+        public float Value => _Value;
+        public static ModifiableFloat Of(float v) => new ModifiableFloat { _Value = v };
+    }
+    public struct ModifiableInt { public int _Value; public int Value => _Value; }
+    public struct ModifiableBool { public bool _Value; public bool Value => _Value; }
+    public struct NetworkedEntity { public Entity _Entity; public bool _WaitingForSync; }
 
-    // A handful of real names plus the single-letter field the shipped assemblies actually
-    // carry for the spell crit chance, so the obfuscation path is exercised.
+    // SYNTHETIC, on purpose. The real ProjectM.UnitStats of 1.1.12 carries 15 fields —
+    // PhysicalPower, SpellPower, ResourcePower, SiegePower, PhysicalResistance,
+    // SpellResistance, FireResistance, PassiveHealthRegen, CCReduction, HealthRecovery,
+    // DamageReduction, HealingReceived, ReducedBloodDrain, BloodDrainMultiplier,
+    // CorruptionDamageReduction — and no single-letter field: the crit, speed and
+    // DamageVs stats live on ProjectM.Shared.VampireSpecificAttributes instead.
+    // The shape below is kept because it is what exercises the collector's paths: an
+    // obfuscated name with no label, a stat sitting at zero, a bool, a bare int and a
+    // non-numeric field. Replacing it with the real 15 would drop those five checks.
     public struct UnitStats
     {
         public ModifiableFloat PhysicalPower;
@@ -66,6 +87,10 @@ namespace ProjectM
         public string NotANumber;
     }
 
+    // SYNTHETIC in one respect: the real ProjectM.Blood does expose a maximum, as
+    // MaxBlood (ModifiableFloat), so in game the collector will publish MaxAmount. No
+    // Max field is declared here so the "nothing invented when the game exposes no
+    // maximum" check keeps testing that path.
     public struct Blood { public PrefabGUID BloodType; public float Quality; public float Value; }
 
     public struct EquipmentSlot { public PrefabGUID SlotId; public NetworkedEntity SlotEntity; }
@@ -79,34 +104,38 @@ namespace ProjectM
         public ModifiableFloat SpellLevel;
     }
 
-    public struct Durability { public float Value; public float MaxDurability; }
     public struct LifeTime { public float Duration; }
     public struct Age { public float Value; }
 
+    // Trimmed to the members the collector reads. The real UnitStatType has 83 values and
+    // ModifyUnitStatBuff_DOTS 10 fields; the extra ones change nothing the check covers.
     public enum UnitStatType { PhysicalPower, SpellPower, MovementSpeed, SpellCriticalStrikeChance }
-    public enum ModificationType { AddToBase, Multiply }
+    public enum ModificationType { Set, SetMin, SetMax, Add, Multiply, MultiplyBaseAdd, AddToBase, BitwiseOR, BitwiseNOT }
     public struct ModifyUnitStatBuff_DOTS
     {
         public UnitStatType StatType; public ModificationType ModificationType;
         public float Value; public float Modifier;
     }
 
-    public struct SpellMod { public PrefabGUID Id; public float Power; }
-    public struct SpellModSet
-    {
-        public SpellMod Mod0; public SpellMod Mod1;
-        public int Count;
-        public SpellMod this[int i] => i == 0 ? Mod0 : Mod1;
-    }
-    public struct SpellModSetComponent { public SpellModSet SpellMods; }
-    public struct LegendaryItemInstance { public int TierIndex; }
-    public struct LegendaryItemSpellModSetComponent { public SpellModSet StatMods; public SpellModSet AbilityMods0; }
     public struct AbilityGroupSlotBuffer { public PrefabGUID BaseAbilityGroupOnSlot; public NetworkedEntity GroupSlotEntity; }
+
+    public struct BuffBuffer { public PrefabGUID PrefabGuid; public Unity.Entities.Entity Entity; }
 }
 
 namespace ProjectM.Shared
 {
     using Stunlock.Core;
-    using Unity.Entities;
-    public struct BuffBuffer { public PrefabGUID PrefabGuid; public Entity Entity; }
+
+    public struct Durability { public float Value; public float MaxDurability; }
+
+    public struct SpellMod { public PrefabGUID Id; public float Power; }
+    public struct SpellModSet
+    {
+        public SpellMod Mod0; public SpellMod Mod1;
+        public byte Count;
+        public SpellMod this[int i] => i == 0 ? Mod0 : Mod1;
+    }
+    public struct SpellModSetComponent { public SpellModSet SpellMods; }
+    public struct LegendaryItemInstance { public byte TierIndex; }
+    public struct LegendaryItemSpellModSetComponent { public SpellModSet StatMods; public SpellModSet AbilityMods0; }
 }

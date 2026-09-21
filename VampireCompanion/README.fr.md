@@ -2,7 +2,7 @@
 
 Assistant V Rising **côté client**, pour Codex / ChatGPT avec connexion MCP locale.
 
-**Statut : archive de sources, à compiler puis à valider en jeu.** Cette version ajoute la lecture du personnage. Contrairement aux précédentes, **elle ne contient pas de binaires** : le mod n'a pas pu être compilé dans l'environnement de développement, qui n'avait pas accès aux assemblies de référence du jeu. La première compilation a donc lieu chez toi. Les tests de la passerelle se font avec des données de test explicitement séparées ; aucune connexion à ta partie n'a été effectuée pendant le développement. Cible de compilation : références V Rising **1.1.12-r99041-b2**, BepInEx IL2CPP **6.0.0-be.733**, .NET 6.
+**Statut : archive de sources, à compiler puis à valider en jeu.** Cette version ajoute la lecture du personnage. Contrairement aux précédentes, **elle ne contient pas de binaires** : tu la compiles toi-même. Le mod compile désormais sans erreur ni avertissement contre les vraies assemblies de référence du jeu, ce qui n'avait pas pu être fait au moment de l'écriture ; **il n'a toujours pas été chargé dans une partie**. Les tests de la passerelle se font avec des données de test explicitement séparées ; aucune connexion à ta partie n'a été effectuée pendant le développement. Cible de compilation : références V Rising **1.1.12-r99041-b2**, BepInEx IL2CPP **6.0.0-be.733**, .NET 6.
 
 Lire `VALIDATION.md` avant d'installer : il liste précisément ce qui a été vérifié et ce qui ne l'a pas été.
 
@@ -43,7 +43,7 @@ Le mod lit maintenant ce qui manquait pour analyser un build.
 
 | Donnée | Ce qui est publié |
 |---|---|
-| Statistiques finales | Le bloc `UnitStats` calculé par le jeu : puissances physique et magique, chances et dégâts critiques, résistances, vitesses, récupérations, vols de vie, bonus contre les types d'ennemis. |
+| Statistiques finales | Le bloc `UnitStats` calculé par le jeu, champ par champ. En 1.1.12 ce composant porte 15 champs : puissances physique, magique, de récolte et de siège, résistances physique, magique et au feu, régénération passive, récupération de vie, réduction des dégâts et de ceux de corruption, soins reçus, réduction des contrôles, consommation de sang. **Les chances et dégâts critiques, les vitesses, les vols de vie et les bonus contre les types d'ennemis n'y sont pas** : voir la limite de couverture ci-dessous. |
 | Sang | Type, qualité en pourcentage et quantité restante. Les bonus du sang sont des buffs : ils apparaissent dans `get_buffs`. |
 | Équipement | Chaque emplacement : objet, durabilité, palier légendaire, infusion, modificateurs d'arme ancestrale, et les apports de statistiques que la pièce déclare. |
 | Buffs | Potions, effets du sang, bonus permanents, avec durée totale, temps restant et apports de statistiques. |
@@ -55,7 +55,9 @@ Le mod lit maintenant ce qui manquait pour analyser un build.
 
 ### Noms de champs et valeurs manquantes
 
-Plusieurs champs de statistiques sont **obfusqués** dans les assemblies livrées du jeu et changent de nom d'une version à l'autre : la chance de coup critique magique, par exemple, apparaît sous un nom d'une seule lettre. Le mod découvre donc les champs sur les composants eux-mêmes au lieu de les coder en dur. Conséquences :
+**Limite de couverture constatée à la compilation (1.1.12-r99041-b2).** `UnitStats` ne porte que les 15 champs listés plus haut. Les autres statistiques de la fiche — chances et dégâts critiques physiques et magiques, vitesses de déplacement bonus, puissance de compétence d'arme, efficacité de l'ultime, emplacements d'inventaire supplémentaires, résistances sacrée, à l'argent, à l'ail et au soleil, résilience JcJ — sont portées par un **autre** composant, `ProjectM.Shared.VampireSpecificAttributes` (32 champs, répliqué séparément), que ce collecteur **ne lit pas**. `get_character` publiera donc les 15 statistiques d'`UnitStats` et rien de plus. Ce n'est pas une lecture vide ni une valeur inventée : c'est une couverture partielle, signalée ici plutôt que laissée à découvrir.
+
+Les noms de champs sont malgré tout découverts sur les composants eux-mêmes au lieu d'être codés en dur, parce qu'ils changent d'une version à l'autre. Aucun champ d'une seule lettre n'a été trouvé sur `UnitStats` en 1.1.12 ; la chance de coup critique magique y porte son nom complet, `SpellCriticalStrikeChance`, mais sur `VampireSpecificAttributes`. Conséquences :
 
 - un champ inconnu est publié **tel quel**, avec un libellé nul, jamais renommé au jugé ;
 - `explain_stat` indique quand la valeur finale et les apports ne peuvent pas être reliés avec certitude ;
@@ -74,7 +76,7 @@ La convention des dégâts critiques n'est pas déclarée par le jeu. L'outil an
 ### Vérification dans ta partie
 
 1. `get_status` : les entrées `stats`, `blood`, `equipment`, `buffs` et `spells` doivent afficher `observed`. Toute autre valeur indique un composant non répliqué, et le message se trouve dans `warnings`.
-2. Comparer `get_character` avec la fiche du personnage en jeu, statistique par statistique. Signaler tout écart : le bloc final doit correspondre exactement, puisqu'il est lu et non calculé.
+2. Comparer `get_character` avec la fiche du personnage en jeu, statistique par statistique. Les 15 champs d'`UnitStats` doivent correspondre exactement, puisqu'ils sont lus et non calculés ; signaler tout écart. Les statistiques absentes de la liste ne sont pas un écart de lecture mais la limite de couverture décrite plus haut.
 3. Boire une potion, puis rappeler `get_buffs` : le buff doit apparaître avec un temps restant qui décroît, et la statistique concernée doit avoir bougé dans `get_character`.
 4. `explain_stat` sur la puissance physique, puis retirer une pièce d'équipement et recommencer : l'apport de cette pièce doit disparaître, et la valeur finale baisser d'autant si l'apport était additif.
 5. Changer de sang et vérifier le type, la qualité et les buffs associés.
