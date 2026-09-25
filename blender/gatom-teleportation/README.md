@@ -62,26 +62,25 @@ Options : `--palette anos|azur|abysse`, `--incantation TEXTE`, `--engine EEVEE|C
 
 ## Bande-son
 
-`son/gatom_son.py` fabrique le son par synthèse (FM, oscillateurs, filtres, bruit,
-réverbération), sans aucun échantillon externe et sans musique de fond : ce ne sont que
-des effets de sort, accordés entre eux. Tant que le sort se prépare, tout est en
-**ré mineur**. À la téléportation, tout bascule en **ré majeur**, et cette résolution
-rend l'effet satisfaisant.
+`son/gatom_son.py` fabrique le son par synthèse, sans aucun échantillon externe.
+Il ne contient que du bruitage et de l'ambiance : aucune note, aucun accord, aucune
+mélodie. Tout est fait de bruit filtré, d'impacts, de souffles et de crépitements.
 
 Le script lit la chronologie dans `gatom_teleportation.py` : si vous déplacez le flash
 (`F_FLASH`), relancez `python son/gatom_son.py` et le son suit.
 
-| Images | Effet sonore |
+| Images | Bruitage |
 |---|---|
-| 1 → 31 | Arpège cristallin qui suit le trait autour du cercle ; chaque couche se verrouille avec un clic et une cloche (ré, la, ré aigu) |
-| 24 → 62 | Les cercles décollent (souffle et note qui glisse) puis se posent sur ré, fa, la : l'accord de ré mineur se construit |
-| 60 | La colonne jaillit : « whoom » grave |
-| 60 → 87 | Charge : son de Shepard qui semble monter sans fin, arpège qui accélère en ping-pong, pulsations graves de plus en plus rapides |
-| 84 → 88 | L'accord final aspiré à l'envers, puis 25 ms de silence |
-| **88** | **Téléportation** : chute grave, « shing » métallique, accord de ré majeur qui s'ouvre, cascade de paillettes |
+| tout du long | Ambiance d'une salle de pierre, et bourdonnement d'énergie du cercle qui palpite à la vitesse de rotation |
+| 1 → 31 | Le trait de lumière grave le sol : grésillement qui tourne autour du cercle ; chaque couche se scelle d'un « clonk » sourd |
+| 24 → 62 | Les cercles décollent (souffle qui monte, déplacement d'air) puis se stabilisent (petit choc) |
+| 60 | La colonne jaillit du sol : impact sourd, grondement, gravillons |
+| 60 → 87 | Charge : rugissement d'énergie qui pulse de plus en plus vite, vent qui siffle en montant, arcs électriques |
+| 84 → 88 | Aspiration (souffle inversé), puis 25 ms de silence |
+| **88** | **Téléportation** : chute grave, claquement, souffle d'explosion, roulement de tonnerre, éclats de cristal |
 | 88 → 104 | Onde de choc qui balaie la stéréo |
-| 94 → 106 | La colonne devient un fil : « vwoop » descendant, puis un « tic » aigu quand il disparaît |
-| 106 → 132 | Dernières paillettes, de plus en plus rares |
+| 94 → 106 | La colonne est aspirée en un fil, puis « pop » quand il disparaît |
+| 106 → 132 | Braises qui crépitent de moins en moins, l'ambiance revient seule |
 
 ## Vidéo plus fluide (48 i/s)
 
