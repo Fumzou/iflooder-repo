@@ -23,12 +23,17 @@ Utilisation
      blender -b -P gatom_teleportation.py -- --save gatom.blend
      blender -b -P gatom_teleportation.py -- --render flash.png --frame 88
      blender -b -P gatom_teleportation.py -- --anim rendu/ --engine CYCLES
+     blender -b -P gatom_teleportation.py -- --anim rendu/ --smooth 2   (48 i/s)
    Options : --palette anos|azur|abysse  --incantation TEXTE  --no-fog
-             --samples N  --percent 50  --frames 1:144
+             --samples N  --percent 50  --frames 1:144  --smooth N
+
+La bande-son (son/gatom_son.wav, générée par son/gatom_son.py) est ajoutée
+automatiquement au montage si elle est présente : l'animation se joue avec le son.
 """
 
 import argparse
 import math
+import pathlib
 import random
 import sys
 
@@ -981,8 +986,44 @@ def build_scene(palette=PALETTE, engine="EEVEE", fog=FOG):
     setup_lights(colors, c_cam)
     build_spell(colors, c_spell)
     setup_compositor(scene)
+    add_soundtrack(scene)
     scene.frame_set(70)
     return scene
+
+
+def add_soundtrack(scene):
+    """Place son/gatom_son.wav à l'image 1 du montage, lecture synchronisée au son."""
+    candidates = []
+    if "__file__" in globals():
+        candidates.append(pathlib.Path(__file__).resolve().parent / "son" / "gatom_son.wav")
+    if bpy.data.filepath:
+        candidates.append(pathlib.Path(bpy.path.abspath("//son/gatom_son.wav")))
+    wav = next((c for c in candidates if c.is_file()), None)
+    if wav is None:
+        print("[GATOM] Pas de son/gatom_son.wav : scène sans bande-son.")
+        return
+    editor = scene.sequence_editor_create()
+    strips = editor.strips if hasattr(editor, "strips") else editor.sequences  # 4.2-4.3
+    strips.new_sound("Gatom_Son", str(wav), 1, scene.frame_start)
+    scene.sync_mode = "AUDIO_SYNC"
+
+
+def render_animation(scene, folder, smooth=1):
+    """Rend l'animation. Avec smooth=N, Blender calcule N images par image
+    (positions intermédiaires) : 2 donne 48 i/s pour une vidéo plus fluide."""
+    folder = folder.rstrip("/")
+    if smooth <= 1:
+        scene.render.filepath = folder + "/gatom_"
+        bpy.ops.render.render(animation=True)
+        return
+    n = 0
+    for frame in range(scene.frame_start, scene.frame_end + 1):
+        for k in range(smooth if frame < scene.frame_end else 1):
+            scene.frame_set(frame, subframe=k / smooth)
+            scene.render.filepath = f"{folder}/gatom_{n:04d}"
+            bpy.ops.render.render(write_still=True)
+            n += 1
+    print(f"[GATOM] {n} images rendues : à assembler à {scene.render.fps * smooth} i/s.")
 
 
 def show_in_viewport():
@@ -1019,6 +1060,8 @@ def parse_args():
     p.add_argument("--frame", type=int, default=F_FLASH)
     p.add_argument("--anim", help="rend l'animation dans ce dossier")
     p.add_argument("--frames", help="plage d'images, ex. 1:144")
+    p.add_argument("--smooth", type=int, default=1,
+                   help="images calculées par image avec --anim (2 = 48 i/s)")
     return p.parse_args(argv)
 
 
@@ -1045,8 +1088,7 @@ def main():
         bpy.ops.render.render(write_still=True)
         print(f"[GATOM] Image {args.frame} rendue : {args.render}")
     if args.anim:
-        scene.render.filepath = args.anim.rstrip("/") + "/gatom_"
-        bpy.ops.render.render(animation=True)
+        render_animation(scene, args.anim, args.smooth)
     print("[GATOM] Scène prête.")
 
 
