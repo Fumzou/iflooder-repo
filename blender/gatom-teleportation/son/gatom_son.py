@@ -10,19 +10,19 @@ F_FLASH, F_GONE) : si vous déplacez le flash dans le script Blender, le son sui
     pip install numpy scipy
     python son/gatom_son.py
 
-Feuille de sons (image → son) :
+Feuille de sons (image → son), effets seuls :
   1-31    tracé des 3 couches : grattement lumineux qui tourne de gauche à droite
-  27/29/31 chaque couche terminée : cloche (ré, fa, la)
-  24/32/40 décollage des cercles flottants : souffle montant + « vwom » + cloche aiguë
+  24/32/40 décollage des cercles flottants : souffle montant + « vwom »
   60      la colonne jaillit : impact grave + grondement
   60-87   charge : montée de hauteur, souffle, crépitements électriques de plus en plus serrés
   84-88   aspiration (souffle inversé) puis silence de 20 ms
   88      TÉLÉPORTATION : boum grave, claquement, éclat métallique
   88-104  onde de choc : souffle qui balaie la stéréo en s'assombrissant
   94-106  la colonne se resserre en un fil : glissando descendant + tintement
-  96-120  les cercles se dissipent : cloches descendantes (la, fa, ré), puis ré grave
-  tout du long : bourdon grave dont la pulsation suit la vitesse de rotation des
-  cercles, et étincelles aiguës qui suivent la quantité de particules à l'écran
+  tout du long : étincelles aiguës qui suivent la quantité de particules à l'écran
+
+MUSIQUE = True ajoute la partie musicale : bourdon grave qui pulse avec la rotation
+des cercles et cloches (ré-fa-la au tracé, la-fa-ré à la dissipation).
 """
 
 import ast
@@ -35,6 +35,7 @@ from scipy.signal import fftconvolve
 HERE = pathlib.Path(__file__).resolve().parent
 SR = 48000
 RNG = np.random.default_rng(1379)
+MUSIQUE = False     # True : ajoute le bourdon et les cloches aux effets
 
 
 def read_timeline():
@@ -180,10 +181,10 @@ def tracing():
         x *= 0.35 + 3.0 * jitter
         e = np.minimum(lt / 0.06, 1) * np.clip((dur + 0.2 - lt) / 0.2, 0, 1)
         pan = 0.75 * np.sin(2 * np.pi * prog + i)       # le trait fait le tour du cercle
-        place(x * e, start, pan, gain=0.11, send=0.3)
-        # couche terminée : cloche (ré, fa, la)
-        place(bell([587.33, 698.46, 880.0][i]), start + dur, pan=[-0.5, 0.0, 0.5][i],
-              gain=0.11, send=0.55)
+        place(x * e, start, pan, gain=0.2, send=0.3)
+        if MUSIQUE:  # couche terminée : cloche (ré, fa, la)
+            place(bell([587.33, 698.46, 880.0][i]), start + dur, pan=[-0.5, 0.0, 0.5][i],
+                  gain=0.11, send=0.55)
 
 
 def lifts():
@@ -197,13 +198,14 @@ def lifts():
         whoosh = svf(RNG.standard_normal(n), 250 * (11 ** prog), 1.3, "band")
         e = np.sin(np.pi * np.clip(lt / (rise + 0.3), 0, 1)) ** 1.5
         place(whoosh * e, start, pan=np.linspace(-0.3, 0.3, n) * (1 if i % 2 else -1),
-              gain=0.14, send=0.3)
+              gain=0.25, send=0.3)
         base = [146.83, 174.61, 220.0][i]
         f = base * (2 ** prog)
         vwom = osc(f, n) + 0.3 * osc(3 * f, n)
-        place(vwom * e * 0.9, start, gain=0.09, send=0.25)
-        place(bell([1174.66, 1396.91, 1760.0][i], 1.6, 0.7), start + 0.35,
-              pan=[-0.35, 0.35, 0.0][i], gain=0.07, send=0.6)
+        place(vwom * e * 0.9, start, gain=0.15, send=0.25)
+        if MUSIQUE:
+            place(bell([1174.66, 1396.91, 1760.0][i], 1.6, 0.7), start + 0.35,
+                  pan=[-0.35, 0.35, 0.0][i], gain=0.07, send=0.6)
 
 
 def sparkles():
@@ -236,15 +238,15 @@ def charge():
     roar = svf(RNG.standard_normal(n), 180 + 700 * np.minimum(prog * 1.8, 1), 0.8)
     grow = 16 / (FPS * (tf - t0))
     roar_env = np.where(prog < grow, (prog / grow) ** 0.7, 1.0 - 0.5 * (prog - grow) / (1 - grow))
-    place(roar * roar_env * end_fade, t0, gain=0.13, send=0.25)
+    place(roar * roar_env * end_fade, t0, gain=0.24, send=0.25)
     # montée de hauteur avec trémolo qui accélère
     f = expo(110, 880, n)
     tone = svf(osc(f, n, "saw") + osc(f * 1.005, n), f * 4, 0.8)
     trem = 0.6 + 0.4 * np.sin(2 * np.pi * np.cumsum(4 + 18 * prog ** 2) / SR)
-    place(tone * trem * prog ** 1.8 * end_fade, t0, gain=0.3, send=0.3)
+    place(tone * trem * prog ** 1.8 * end_fade, t0, gain=0.45, send=0.3)
     # souffle qui monte
     riser = svf(RNG.standard_normal(n), expo(300, 7000, n), 0.9, "band")
-    place(riser * prog ** 1.8 * end_fade, t0, pan=0.0, gain=0.45, send=0.35)
+    place(riser * prog ** 1.8 * end_fade, t0, pan=0.0, gain=0.7, send=0.35)
     # crépitements électriques de plus en plus serrés
     step = 0.002
     for s in np.arange(0, tf - t0, step):
@@ -253,12 +255,12 @@ def charge():
             k = int(RNG.uniform(0.002, 0.009) * SR)
             burst = svf(RNG.standard_normal(k), np.full(k, RNG.uniform(2000, 6500)), 2.0, "band")
             place(burst * np.exp(-np.arange(k) / (k / 3)), t0 + s, pan=RNG.uniform(-1, 1),
-                  gain=RNG.uniform(0.05, 0.16), send=0.2)
+                  gain=RNG.uniform(0.08, 0.25), send=0.2)
     # aspiration (souffle inversé) qui se termine pile avant l'impact
     a = int(0.45 * SR)
     rev = svf(RNG.standard_normal((2, a)).ravel(), np.full(2 * a, 3500.0), 0.7).reshape(2, a)
     rev *= np.exp(-np.arange(a) / (0.12 * SR))
-    place(rev[:, ::-1] * 1.0, tf - 0.45, gain=0.28, send=0.3)
+    place(rev[:, ::-1] * 1.0, tf - 0.45, gain=0.4, send=0.3)
 
 
 def impact():
@@ -294,10 +296,10 @@ def collapse_and_fade():
     zip_ = (osc(f, n) + 0.4 * osc(2 * f, n, "tri")) * np.sin(np.pi * np.clip(lt / (t1 - t0), 0, 1))
     place(zip_, t0, gain=0.06, send=0.4)
     place(bell(1760.0, 1.4, 0.5), t1, gain=0.06, send=0.7)
-    # cloches descendantes : le motif d'ouverture à l'envers
-    for k, (fr, pan) in enumerate(((880.0, 0.5), (698.46, 0.0), (587.33, -0.5))):
-        place(bell(fr, 2.0, 0.6), at(F_FLASH + 8 + 5 * k), pan=pan, gain=0.1, send=0.7)
-    place(bell(293.66, 3.0, 0.4), at(F_GONE - 12), gain=0.13, send=0.6)
+    if MUSIQUE:  # cloches descendantes : le motif d'ouverture à l'envers
+        for k, (fr, pan) in enumerate(((880.0, 0.5), (698.46, 0.0), (587.33, -0.5))):
+            place(bell(fr, 2.0, 0.6), at(F_FLASH + 8 + 5 * k), pan=pan, gain=0.1, send=0.7)
+        place(bell(293.66, 3.0, 0.4), at(F_GONE - 12), gain=0.13, send=0.6)
 
 
 def reverb(x, seconds=2.4, rt60=2.0):
@@ -311,7 +313,8 @@ def reverb(x, seconds=2.4, rt60=2.0):
 
 
 def main():
-    drone()
+    if MUSIQUE:
+        drone()
     tracing()
     lifts()
     sparkles()

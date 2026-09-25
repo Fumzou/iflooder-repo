@@ -67,20 +67,22 @@ réverbération, sans aucun échantillon externe. Il lit la chronologie dans
 `gatom_teleportation.py` : si vous déplacez le flash (`F_FLASH`), relancez
 `python son/gatom_son.py` et le son suit.
 
-| Images | Son |
+| Images | Effet sonore |
 |---|---|
-| 1 → 31 | Grattement lumineux qui fait le tour du cercle ; une cloche à chaque couche terminée (ré, fa, la) |
-| 24, 32, 40 | Décollage des cercles flottants : souffle montant, « vwom », cloche aiguë |
+| 1 → 31 | Grattement lumineux qui fait le tour du cercle pendant le tracé |
+| 24, 32, 40 | Décollage des cercles flottants : souffle montant et « vwom » |
 | 60 | La colonne jaillit : impact grave et grondement |
 | 60 → 87 | Charge : son qui monte, souffle, crépitements électriques de plus en plus serrés |
 | 84 → 88 | Aspiration (souffle inversé), puis 20 ms de silence |
 | **88** | **Téléportation** : boum grave, claquement, éclat métallique |
 | 88 → 104 | Onde de choc qui balaie la stéréo |
 | 94 → 106 | La colonne devient un fil : glissando descendant et tintement |
-| 96 → 120 | Les cercles se dissipent : cloches descendantes (la, fa, ré), puis ré grave |
 
-Tout du long, un bourdon grave pulse à la vitesse de rotation des cercles, et des
-étincelles aiguës suivent la quantité de particules à l'écran.
+Tout du long, des étincelles aiguës suivent la quantité de particules à l'écran.
+
+La bande-son ne contient que des effets. Pour ajouter une partie musicale (un bourdon
+grave qui pulse avec la rotation des cercles, et des cloches ré-fa-la puis la-fa-ré),
+mettez `MUSIQUE = True` en haut de `son/gatom_son.py` et relancez-le.
 
 ## Vidéo plus fluide (48 i/s)
 
