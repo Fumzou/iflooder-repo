@@ -14,6 +14,9 @@ change en une ligne (voir « Personnaliser »).
 Animation complète : [`apercus/gatom_animation.mp4`](apercus/gatom_animation.mp4)
 (ou le GIF [`apercus/gatom_animation.gif`](apercus/gatom_animation.gif)).
 
+Version **image par image** : [`apercus/gatom_image_par_image.mp4`](apercus/gatom_image_par_image.mp4)
+(ralentie 4×, 6 images/s, avec le numéro de l'image, le temps et la phase du sort à l'écran).
+
 ## Contenu
 
 | Fichier | Rôle |
