@@ -70,17 +70,17 @@ réverbération, sans aucun échantillon externe. Il lit la chronologie dans
 | Images | Effet sonore |
 |---|---|
 | 1 → 31 | Grattement lumineux qui fait le tour du cercle pendant le tracé |
-| 24, 32, 40 | Décollage des cercles flottants : souffle montant et « vwom » |
+| 24, 32, 40 | Décollage des cercles flottants : souffle montant et grondement sourd |
 | 60 | La colonne jaillit : impact grave et grondement |
 | 60 → 87 | Charge : son qui monte, souffle, crépitements électriques de plus en plus serrés |
 | 84 → 88 | Aspiration (souffle inversé), puis 20 ms de silence |
-| **88** | **Téléportation** : boum grave, claquement, éclat métallique |
+| **88** | **Téléportation** : boum grave, claquement, grésillement |
 | 88 → 104 | Onde de choc qui balaie la stéréo |
-| 94 → 106 | La colonne devient un fil : glissando descendant et tintement |
+| 94 → 106 | La colonne devient un fil : sifflement qui descend, puis un souffle |
 
-Tout du long, des étincelles aiguës suivent la quantité de particules à l'écran.
+Tout du long, des crépitements aigus suivent la quantité de particules à l'écran.
 
-La bande-son ne contient que des effets. Pour ajouter une partie musicale (un bourdon
+La bande-son ne contient que des bruitages, sans aucune note de musique. Pour ajouter une partie musicale (un bourdon
 grave qui pulse avec la rotation des cercles, et des cloches ré-fa-la puis la-fa-ré),
 mettez `MUSIQUE = True` en haut de `son/gatom_son.py` et relancez-le.
 

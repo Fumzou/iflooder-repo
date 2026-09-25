@@ -12,14 +12,17 @@ F_FLASH, F_GONE) : si vous déplacez le flash dans le script Blender, le son sui
 
 Feuille de sons (image → son), effets seuls :
   1-31    tracé des 3 couches : grattement lumineux qui tourne de gauche à droite
-  24/32/40 décollage des cercles flottants : souffle montant + « vwom »
+  24/32/40 décollage des cercles flottants : souffle montant + grondement sourd
   60      la colonne jaillit : impact grave + grondement
   60-87   charge : montée de hauteur, souffle, crépitements électriques de plus en plus serrés
   84-88   aspiration (souffle inversé) puis silence de 20 ms
-  88      TÉLÉPORTATION : boum grave, claquement, éclat métallique
+  88      TÉLÉPORTATION : boum grave, claquement, grésillement
   88-104  onde de choc : souffle qui balaie la stéréo en s'assombrissant
-  94-106  la colonne se resserre en un fil : glissando descendant + tintement
-  tout du long : étincelles aiguës qui suivent la quantité de particules à l'écran
+  94-106  la colonne se resserre en un fil : sifflement qui descend + souffle
+  tout du long : crépitements aigus qui suivent la quantité de particules à l'écran
+
+Aucun son n'a de note : ce ne sont que des bruitages (bruit filtré, impacts,
+souffles), sauf la montée de la charge.
 
 MUSIQUE = True ajoute la partie musicale : bourdon grave qui pulse avec la rotation
 des cercles et cloches (ré-fa-la au tracé, la-fa-ré à la dissipation).
@@ -199,28 +202,26 @@ def lifts():
         e = np.sin(np.pi * np.clip(lt / (rise + 0.3), 0, 1)) ** 1.5
         place(whoosh * e, start, pan=np.linspace(-0.3, 0.3, n) * (1 if i % 2 else -1),
               gain=0.25, send=0.3)
-        base = [146.83, 174.61, 220.0][i]
-        f = base * (2 ** prog)
-        vwom = osc(f, n) + 0.3 * osc(3 * f, n)
-        place(vwom * e * 0.9, start, gain=0.15, send=0.25)
+        thrum = svf(RNG.standard_normal(n), 120 * (5 ** prog), 0.9)   # grondement sourd
+        place(thrum * e, start, gain=0.4, send=0.25)
         if MUSIQUE:
             place(bell([1174.66, 1396.91, 1760.0][i], 1.6, 0.7), start + 0.35,
                   pan=[-0.35, 0.35, 0.0][i], gain=0.07, send=0.6)
 
 
 def sparkles():
-    """Étincelles aiguës dont la densité suit la poussière de mana à l'écran."""
+    """Crépitements aigus dont la densité suit la poussière de mana à l'écran."""
     dust = [(at(4), 0.0), (at(26), 1.0), (at(F_FLASH - 4), 1.4), (at(F_FLASH), 2.3),
             (at(F_FLASH + 12), 0.8), (at(FRAME_END - 4), 0.0)]
     step = 0.005
     for s in np.arange(0, DUR, step):
         rate = 7.0 * float(np.interp(s, *zip(*dust)))
         if RNG.random() < rate * step:
-            d = RNG.uniform(0.03, 0.12)
+            d = RNG.uniform(0.005, 0.025)
             n = int(d * SR)
-            lt = np.arange(n) / SR
-            g = np.sin(2 * np.pi * RNG.uniform(3000, 9000) * lt) * np.exp(-lt / (d / 4))
-            place(g, s, pan=RNG.uniform(-0.9, 0.9), gain=RNG.uniform(0.04, 0.1), send=0.45)
+            tick = svf(RNG.standard_normal(n), np.full(n, RNG.uniform(4000, 9000)), 3.0, "band")
+            tick *= np.exp(-np.arange(n) / (n / 4))
+            place(tick, s, pan=RNG.uniform(-0.9, 0.9), gain=RNG.uniform(0.08, 0.2), send=0.45)
 
 
 def charge():
@@ -275,11 +276,9 @@ def impact():
     place(crack * np.exp(-lt / 0.025), tf, gain=0.45, send=0.5)
     body = svf(RNG.standard_normal((2, n)).ravel(), np.full(2 * n, 1500.0), 0.7).reshape(2, n)
     place(body * np.exp(-lt / 0.35), tf, gain=0.5, send=0.7)
-    shimmer = np.zeros(n)
-    for fr in (1318.5, 1864.7, 2489.0, 3322.4, 4434.9):
-        shimmer += np.sin(2 * np.pi * fr * lt + RNG.uniform(0, 6.28)) * np.exp(-lt / RNG.uniform(0.8, 1.6))
-    shimmer *= 0.75 + 0.25 * np.sin(2 * np.pi * 13 * lt)
-    place(shimmer, tf, pan=0.0, gain=0.07, send=0.85)
+    sizzle = svf(RNG.standard_normal((2, n)).ravel(), np.full(2 * n, 5000.0), 0.7, "high").reshape(2, n)
+    flicker = 0.4 + 2.5 * np.abs(svf(RNG.standard_normal(n), np.full(n, 60.0), 0.7))
+    place(sizzle * np.exp(-lt / 0.5) * flicker, tf, gain=0.16, send=0.6)
     # onde de choc : souffle qui s'assombrit et s'ouvre en stéréo
     m = int((16 / FPS + 0.4) * SR)
     lm = np.arange(m) / SR
@@ -292,10 +291,13 @@ def collapse_and_fade():
     t0, t1 = at(F_FLASH + 6), at(F_FLASH + 18)
     n = int((t1 - t0 + 0.1) * SR)
     lt = np.arange(n) / SR
-    f = expo(2400, 300, n)
-    zip_ = (osc(f, n) + 0.4 * osc(2 * f, n, "tri")) * np.sin(np.pi * np.clip(lt / (t1 - t0), 0, 1))
-    place(zip_, t0, gain=0.06, send=0.4)
-    place(bell(1760.0, 1.4, 0.5), t1, gain=0.06, send=0.7)
+    whistle = svf(RNG.standard_normal(n), expo(2400, 300, n), 8.0, "band")
+    place(whistle * np.sin(np.pi * np.clip(lt / (t1 - t0), 0, 1)), t0, gain=0.3, send=0.4)
+    m = int(0.25 * SR)
+    puff = svf(RNG.standard_normal(m), np.full(m, 2000.0), 0.7) * np.exp(-np.arange(m) / (0.06 * SR))
+    place(puff, t1, gain=0.25, send=0.5)
+    if MUSIQUE:
+        place(bell(1760.0, 1.4, 0.5), t1, gain=0.06, send=0.7)
     if MUSIQUE:  # cloches descendantes : le motif d'ouverture à l'envers
         for k, (fr, pan) in enumerate(((880.0, 0.5), (698.46, 0.0), (587.33, -0.5))):
             place(bell(fr, 2.0, 0.6), at(F_FLASH + 8 + 5 * k), pan=pan, gain=0.1, send=0.7)
