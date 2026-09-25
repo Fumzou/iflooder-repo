@@ -11,7 +11,9 @@ change en une ligne (voir « Personnaliser »).
 |---|---|---|---|
 | ![](apercus/gatom_01_trace.jpg) | ![](apercus/gatom_02_cercles.jpg) | ![](apercus/gatom_04_flash.jpg) | ![](apercus/gatom_05_dissipation.jpg) |
 
-Animation complète : [`apercus/gatom_animation.mp4`](apercus/gatom_animation.mp4)
+**Vidéo avec le son, 48 images/s :** [`apercus/gatom_48ips_son.mp4`](apercus/gatom_48ips_son.mp4)
+
+Animation sans son à 24 i/s : [`apercus/gatom_animation.mp4`](apercus/gatom_animation.mp4)
 (ou le GIF [`apercus/gatom_animation.gif`](apercus/gatom_animation.gif)).
 
 Version **image par image** : [`apercus/gatom_image_par_image.mp4`](apercus/gatom_image_par_image.mp4)
@@ -23,13 +25,16 @@ Version **image par image** : [`apercus/gatom_image_par_image.mp4`](apercus/gato
 |---|---|
 | `gatom_teleportation.blend` | La scène prête à ouvrir (Blender 4.5 LTS, s'ouvre aussi en 5.x) |
 | `gatom_teleportation.py` | Le script qui génère toute la scène (aucun fichier externe) |
-| `apercus/` | Images et animation rendues avec Cycles |
+| `son/gatom_son.wav` | La bande-son, calée à l'image près (6 s, 48 kHz, stéréo) |
+| `son/gatom_son.py` | Le générateur de la bande-son (synthèse pure, `numpy` + `scipy`) |
+| `apercus/` | Images et animations rendues avec Cycles |
 
 ## Utilisation rapide
 
 1. Ouvrez `gatom_teleportation.blend`.
 2. Passez la vue 3D en ombrage **Rendu** (touche `Z` → *Rendered*) et regardez par la caméra (`Pavé num. 0`).
-3. `Espace` pour jouer l'animation (144 images, 6 s à 24 i/s).
+3. `Espace` pour jouer l'animation (144 images, 6 s à 24 i/s), avec le son : la bande-son
+   est déjà placée dans le montage (*Video Sequencer*) et la lecture est synchronisée sur le son.
 4. `F12` rend l'image courante, `Ctrl + F12` rend l'animation dans `//rendu/`.
 
 Le fichier est réglé sur **EEVEE** (rapide sur carte graphique). Pour un rendu plus fin,
@@ -54,6 +59,40 @@ blender -b -P gatom_teleportation.py -- --anim rendu/ --percent 50
 
 Options : `--palette anos|azur|abysse`, `--incantation TEXTE`, `--engine EEVEE|CYCLES`,
 `--samples N`, `--percent P`, `--frames 1:144`, `--no-fog`.
+
+## Bande-son
+
+`son/gatom_son.py` fabrique le son par synthèse : oscillateurs, filtres, bruit et
+réverbération, sans aucun échantillon externe. Il lit la chronologie dans
+`gatom_teleportation.py` : si vous déplacez le flash (`F_FLASH`), relancez
+`python son/gatom_son.py` et le son suit.
+
+| Images | Son |
+|---|---|
+| 1 → 31 | Grattement lumineux qui fait le tour du cercle ; une cloche à chaque couche terminée (ré, fa, la) |
+| 24, 32, 40 | Décollage des cercles flottants : souffle montant, « vwom », cloche aiguë |
+| 60 | La colonne jaillit : impact grave et grondement |
+| 60 → 87 | Charge : son qui monte, souffle, crépitements électriques de plus en plus serrés |
+| 84 → 88 | Aspiration (souffle inversé), puis 20 ms de silence |
+| **88** | **Téléportation** : boum grave, claquement, éclat métallique |
+| 88 → 104 | Onde de choc qui balaie la stéréo |
+| 94 → 106 | La colonne devient un fil : glissando descendant et tintement |
+| 96 → 120 | Les cercles se dissipent : cloches descendantes (la, fa, ré), puis ré grave |
+
+Tout du long, un bourdon grave pulse à la vitesse de rotation des cercles, et des
+étincelles aiguës suivent la quantité de particules à l'écran.
+
+## Vidéo plus fluide (48 i/s)
+
+`--smooth 2` fait calculer à Blender une image intermédiaire entre chaque image : les
+positions exactes à mi-chemin, pas une image devinée. On obtient 287 images à assembler
+à 48 i/s :
+
+```bash
+blender -b -P gatom_teleportation.py -- --engine CYCLES --anim rendu/ --smooth 2
+ffmpeg -framerate 48 -i rendu/gatom_%04d.png -i son/gatom_son.wav \
+       -c:v libx264 -crf 17 -pix_fmt yuv420p -c:a aac -b:a 192k gatom.mp4
+```
 
 ## Personnaliser
 
