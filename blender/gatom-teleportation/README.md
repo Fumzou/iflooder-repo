@@ -5,11 +5,11 @@ Le sort de téléportation de la série s'appelle **Gatom** (転移). *Zekt*, lu
 de contrat. La scène représente donc Gatom, mais l'incantation écrite dans les runes se
 change en une ligne (voir « Personnaliser »).
 
-![Colonne de lumière](apercus/gatom_03_colonne.png)
+![Colonne de lumière](apercus/gatom_03_colonne.jpg)
 
 | Tracé du cercle | Cercles superposés | Flash | Dissipation |
 |---|---|---|---|
-| ![](apercus/gatom_01_trace.png) | ![](apercus/gatom_02_cercles.png) | ![](apercus/gatom_04_flash.png) | ![](apercus/gatom_05_dissipation.png) |
+| ![](apercus/gatom_01_trace.jpg) | ![](apercus/gatom_02_cercles.jpg) | ![](apercus/gatom_04_flash.jpg) | ![](apercus/gatom_05_dissipation.jpg) |
 
 Animation complète : [`apercus/gatom_animation.mp4`](apercus/gatom_animation.mp4)
 (ou le GIF [`apercus/gatom_animation.gif`](apercus/gatom_animation.gif)).
