@@ -62,27 +62,26 @@ Options : `--palette anos|azur|abysse`, `--incantation TEXTE`, `--engine EEVEE|C
 
 ## Bande-son
 
-`son/gatom_son.py` fabrique le son par synthèse : oscillateurs, filtres, bruit et
-réverbération, sans aucun échantillon externe. Il lit la chronologie dans
-`gatom_teleportation.py` : si vous déplacez le flash (`F_FLASH`), relancez
-`python son/gatom_son.py` et le son suit.
+`son/gatom_son.py` fabrique le son par synthèse (FM, oscillateurs, filtres, bruit,
+réverbération), sans aucun échantillon externe et sans musique de fond : ce ne sont que
+des effets de sort, accordés entre eux. Tant que le sort se prépare, tout est en
+**ré mineur**. À la téléportation, tout bascule en **ré majeur**, et cette résolution
+rend l'effet satisfaisant.
+
+Le script lit la chronologie dans `gatom_teleportation.py` : si vous déplacez le flash
+(`F_FLASH`), relancez `python son/gatom_son.py` et le son suit.
 
 | Images | Effet sonore |
 |---|---|
-| 1 → 31 | Grattement lumineux qui fait le tour du cercle pendant le tracé |
-| 24, 32, 40 | Décollage des cercles flottants : souffle montant et grondement sourd |
-| 60 | La colonne jaillit : impact grave et grondement |
-| 60 → 87 | Charge : son qui monte, souffle, crépitements électriques de plus en plus serrés |
-| 84 → 88 | Aspiration (souffle inversé), puis 20 ms de silence |
-| **88** | **Téléportation** : boum grave, claquement, grésillement |
+| 1 → 31 | Arpège cristallin qui suit le trait autour du cercle ; chaque couche se verrouille avec un clic et une cloche (ré, la, ré aigu) |
+| 24 → 62 | Les cercles décollent (souffle et note qui glisse) puis se posent sur ré, fa, la : l'accord de ré mineur se construit |
+| 60 | La colonne jaillit : « whoom » grave |
+| 60 → 87 | Charge : son de Shepard qui semble monter sans fin, arpège qui accélère en ping-pong, pulsations graves de plus en plus rapides |
+| 84 → 88 | L'accord final aspiré à l'envers, puis 25 ms de silence |
+| **88** | **Téléportation** : chute grave, « shing » métallique, accord de ré majeur qui s'ouvre, cascade de paillettes |
 | 88 → 104 | Onde de choc qui balaie la stéréo |
-| 94 → 106 | La colonne devient un fil : sifflement qui descend, puis un souffle |
-
-Tout du long, des crépitements aigus suivent la quantité de particules à l'écran.
-
-La bande-son ne contient que des bruitages, sans aucune note de musique. Pour ajouter une partie musicale (un bourdon
-grave qui pulse avec la rotation des cercles, et des cloches ré-fa-la puis la-fa-ré),
-mettez `MUSIQUE = True` en haut de `son/gatom_son.py` et relancez-le.
+| 94 → 106 | La colonne devient un fil : « vwoop » descendant, puis un « tic » aigu quand il disparaît |
+| 106 → 132 | Dernières paillettes, de plus en plus rares |
 
 ## Vidéo plus fluide (48 i/s)
 

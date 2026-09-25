@@ -3,29 +3,32 @@
 Bande-son du sort GATOM, synchronisée à l'image près.
 
 Génère `son/gatom_son.wav` (48 kHz, stéréo, 6 s) entièrement par synthèse :
-aucun échantillon externe. Chaque son est placé à partir de la chronologie lue
-dans `gatom_teleportation.py` (FPS, FRAME_END, F_TRACE, F_LIFT, F_CHARGE,
-F_FLASH, F_GONE) : si vous déplacez le flash dans le script Blender, le son suit.
+aucun échantillon externe, et pas de musique de fond. Ce ne sont que des effets
+de sort, mais accordés entre eux. Pendant que le sort se prépare, tout est en
+ré mineur (tendu, mystérieux) ; au moment de la téléportation, tout bascule en
+ré majeur, et c'est cette résolution qui rend l'effet satisfaisant.
+
+Les instants sont lus dans `gatom_teleportation.py` (FPS, FRAME_END, F_TRACE,
+F_LIFT, F_CHARGE, F_FLASH, F_GONE) : si vous déplacez le flash, le son suit.
 
     pip install numpy scipy
     python son/gatom_son.py
 
-Feuille de sons (image → son), effets seuls :
-  1-31    tracé des 3 couches : grattement lumineux qui tourne de gauche à droite
-  24/32/40 décollage des cercles flottants : souffle montant + grondement sourd
-  60      la colonne jaillit : impact grave + grondement
-  60-87   charge : montée de hauteur, souffle, crépitements électriques de plus en plus serrés
-  84-88   aspiration (souffle inversé) puis silence de 20 ms
-  88      TÉLÉPORTATION : boum grave, claquement, grésillement
-  88-104  onde de choc : souffle qui balaie la stéréo en s'assombrissant
-  94-106  la colonne se resserre en un fil : sifflement qui descend + souffle
-  tout du long : crépitements aigus qui suivent la quantité de particules à l'écran
-
-Aucun son n'a de note : ce ne sont que des bruitages (bruit filtré, impacts,
-souffles), sauf la montée de la charge.
-
-MUSIQUE = True ajoute la partie musicale : bourdon grave qui pulse avec la rotation
-des cercles et cloches (ré-fa-la au tracé, la-fa-ré à la dissipation).
+Feuille de sons (image → son) :
+  1-31    tracé des 3 couches : arpège cristallin qui monte et suit le trait autour
+          du cercle ; chaque couche se verrouille avec un « clic » + cloche (ré, la, ré aigu)
+  24-62   les cercles décollent (souffle + note qui glisse vers le haut) et se posent
+          sur ré, fa, la : l'accord de ré mineur se construit cercle par cercle
+  60      la colonne jaillit : « whoom » grave
+  60-87   charge : son de Shepard qui semble monter sans fin, arpège qui accélère
+          de gauche à droite, pulsations graves de plus en plus rapides
+  84-88   l'accord final aspiré à l'envers, puis 25 ms de silence
+  88      TÉLÉPORTATION : chute grave, « shing » métallique, accord de ré majeur
+          qui s'ouvre, cascade de paillettes qui descend
+  88-104  onde de choc : souffle qui balaie la stéréo
+  94-106  la colonne se resserre en un fil : « vwoop » qui descend, puis un
+          « tic » aigu quand le fil disparaît (le voyageur est parti)
+  106-132 dernières paillettes qui retombent, de plus en plus rares
 """
 
 import ast
@@ -38,7 +41,6 @@ from scipy.signal import fftconvolve
 HERE = pathlib.Path(__file__).resolve().parent
 SR = 48000
 RNG = np.random.default_rng(1379)
-MUSIQUE = False     # True : ajoute le bourdon et les cloches aux effets
 
 
 def read_timeline():
@@ -60,7 +62,6 @@ F_TRACE, F_LIFT, F_CHARGE = TL["F_TRACE"], TL["F_LIFT"], TL["F_CHARGE"]
 F_FLASH, F_GONE = TL["F_FLASH"], TL["F_GONE"]
 DUR = FRAME_END / FPS
 N = int(round(DUR * SR))
-T = np.arange(N) / SR
 
 dry = np.zeros((2, N))
 wet = np.zeros((2, N))
@@ -71,24 +72,20 @@ def at(frame):
     return (frame - 1) / FPS
 
 
+def note(name):
+    """Fréquence d'une note, ex. 'D5', 'F#4' (La4 = 440 Hz)."""
+    steps = {"C": -9, "D": -7, "E": -5, "F": -4, "G": -2, "A": 0, "B": 2}
+    semis = steps[name[0]] + (1 if "#" in name else 0) + 12 * (int(name[-1]) - 4)
+    return 440.0 * 2 ** (semis / 12)
+
+
+MINEUR = [note(n) for n in ("D4", "F4", "A4", "D5", "F5", "A5", "D6", "F6", "A6", "D7")]
+PENTA_MAJ = [note(n) for n in ("D5", "E5", "F#5", "A5", "B5", "D6", "E6", "F#6", "A6", "B6", "D7")]
+
+
 # ---------------------------------------------------------------------------
-# Outils
+# Outils de synthèse
 # ---------------------------------------------------------------------------
-
-def curve(points, lt):
-    xs, ys = zip(*points)
-    return np.interp(lt, xs, ys)
-
-
-def osc(freq, n, kind="sine", phase=0.0):
-    ph = phase + 2 * np.pi * np.cumsum(np.broadcast_to(freq, (n,))) / SR
-    if kind == "sine":
-        return np.sin(ph)
-    cyc = (ph / (2 * np.pi)) % 1.0
-    if kind == "saw":
-        return 2.0 * cyc - 1.0
-    return 4.0 * np.abs(cyc - 0.5) - 1.0   # triangle
-
 
 def svf(x, fc, q=0.7, mode="low"):
     """Filtre à variables d'état (TPT), fréquence de coupure variable dans le temps."""
@@ -122,7 +119,7 @@ def expo(a, b, n):
 def place(sig, start, pan=0.0, gain=1.0, send=0.25):
     """Ajoute un son mono (ou stéréo 2×n) au mix, avec panoramique à puissance constante."""
     i0 = int(round(start * SR))
-    if i0 >= N:
+    if i0 >= N or i0 < 0:
         return
     if sig.ndim == 1:
         n = min(len(sig), N - i0)
@@ -136,197 +133,221 @@ def place(sig, start, pan=0.0, gain=1.0, send=0.25):
     wet[:, i0:i0 + n] += gain * send * st
 
 
-def bell(freq, dur=2.2, bright=1.0):
+def fm(freq, dur, ratio=2.0, index=2.5, idecay=0.06, adecay=0.4, attack=0.002):
+    """Synthèse FM : pincé cristallin (ratio 2) ou cloche (ratio 3,5)."""
     n = int(dur * SR)
     lt = np.arange(n) / SR
-    out = np.zeros(n)
-    for ratio, amp, decay in ((1.0, 1.0, 1.8), (2.0, 0.5, 1.2), (2.76, 0.35 * bright, 0.9),
-                              (4.07, 0.2 * bright, 0.6), (5.4, 0.12 * bright, 0.4),
-                              (6.8, 0.06 * bright, 0.3)):
-        out += amp * np.sin(2 * np.pi * freq * ratio * lt + RNG.uniform(0, 6.28)) * np.exp(-lt / decay)
-    return out * np.minimum(lt / 0.002, 1.0)
+    mod = index * np.exp(-lt / idecay) * np.sin(2 * np.pi * freq * ratio * lt)
+    y = np.sin(2 * np.pi * freq * lt + mod) * np.exp(-lt / adecay)
+    return y * np.minimum(lt / attack, 1.0)
+
+
+def crystal(freq, dur=0.5):
+    return fm(freq, dur, ratio=2.0, index=2.2, idecay=0.04, adecay=dur / 4)
+
+
+def bell(freq, dur=2.0):
+    return fm(freq, dur, ratio=3.5, index=3.5, idecay=0.5, adecay=dur / 3) \
+        + 0.35 * fm(freq * 2.0, dur, ratio=1.4, index=1.5, idecay=0.2, adecay=dur / 6)
+
+
+def click(dur=0.012):
+    n = int(dur * SR)
+    return svf(RNG.standard_normal(n), np.full(n, 3500.0), 1.5, "band") * np.exp(-np.arange(n) / (n / 5))
+
+
+def whoosh(dur, f0, f1, q=1.2):
+    n = int(dur * SR)
+    lt = np.arange(n) / SR
+    x = svf(RNG.standard_normal(n), expo(f0, f1, n), q, "band")
+    return x * np.sin(np.pi * np.clip(lt / dur, 0, 1)) ** 1.5
+
+
+def supersaw(freq, n, voices=5, spread=0.012):
+    lt = np.arange(n) / SR
+    out = np.zeros((2, n))
+    for v in range(voices):
+        det = 1.0 + spread * (v - (voices - 1) / 2) / ((voices - 1) / 2)
+        saw = 2.0 * ((freq * det * lt + RNG.random()) % 1.0) - 1.0
+        side = (v % 2) * 2 - 1 if v != voices // 2 else 0
+        out[0] += saw * (1.0 - 0.35 * side)
+        out[1] += saw * (1.0 + 0.35 * side)
+    return out / voices
 
 
 # ---------------------------------------------------------------------------
-# Couches sonores
+# Les étapes du sort
 # ---------------------------------------------------------------------------
-
-def drone():
-    """Bourdon grave ; sa pulsation suit la vitesse de rotation des cercles."""
-    tf = at(F_FLASH)
-    rate = curve([(0, 1.2), (at(F_CHARGE), 3.0), (tf - 0.02, 12.0), (tf, 2.0), (DUR, 1.0)], T)
-    trem = 0.72 + 0.28 * np.sin(2 * np.pi * np.cumsum(rate) / SR)
-    cutoff = curve([(0, 140), (1.2, 480), (at(F_CHARGE), 650), (tf - 0.02, 2600),
-                    (tf + 0.4, 700), (DUR, 180)], T)
-    amp = curve([(0, 0), (1.3, 0.12), (at(F_CHARGE), 0.15), (tf - 0.06, 0.36), (tf - 0.02, 0.0),
-                 (tf + 0.35, 0.0), (tf + 0.9, 0.11), (at(F_GONE), 0.0), (DUR, 0.0)], T)
-    chans = []
-    for det in (0.0, 0.43):
-        x = np.zeros(N)
-        for mult, d, a in ((0.5, 0.0, 0.7), (1.0, det, 1.0), (1.0, -0.31, 0.7),
-                           (1.5, det * 0.5, 0.45), (2.0, 0.19, 0.35)):
-            x += a * osc(73.42 * mult + d, N, "saw", RNG.uniform(0, 6.28))
-        chans.append(svf(x, cutoff, 0.9) * trem * amp)
-    place(np.vstack(chans), 0.0, gain=1.0, send=0.2)
-
 
 def tracing():
-    """Grattement lumineux pendant que chaque couche du cercle se dessine."""
+    """Arpège cristallin qui suit chaque couche du cercle en train de se dessiner."""
     for i in range(3):
         start = at(F_TRACE + 5 * i)
         dur = (26 - 3 * i) / FPS
-        n = int((dur + 0.25) * SR)
-        lt = np.arange(n) / SR
-        prog = np.clip(lt / dur, 0, 1)
-        fc = 1300 * (1 + 0.3 * i) * (3.2 ** prog)
-        x = svf(RNG.standard_normal(n), fc, 5.0, "band")
-        jitter = np.abs(svf(RNG.standard_normal(n), np.full(n, 28.0), 0.7))
-        x *= 0.35 + 3.0 * jitter
-        e = np.minimum(lt / 0.06, 1) * np.clip((dur + 0.2 - lt) / 0.2, 0, 1)
-        pan = 0.75 * np.sin(2 * np.pi * prog + i)       # le trait fait le tour du cercle
-        place(x * e, start, pan, gain=0.2, send=0.3)
-        if MUSIQUE:  # couche terminée : cloche (ré, fa, la)
-            place(bell([587.33, 698.46, 880.0][i]), start + dur, pan=[-0.5, 0.0, 0.5][i],
-                  gain=0.11, send=0.55)
+        count = 9
+        pool = MINEUR[i * 2: i * 2 + 6]
+        for k in range(count):
+            prog = k / (count - 1)
+            fr = pool[int(prog * (len(pool) - 1) + 0.5)]
+            pan = 0.8 * np.sin(2 * np.pi * prog + i)          # le trait fait le tour du cercle
+            place(crystal(fr, 0.45), start + prog * dur * 0.95, pan=pan,
+                  gain=0.06 + 0.03 * prog, send=0.35)
+        # verrouillage de la couche : clic + cloche (ré, la, ré aigu)
+        lock = start + dur
+        place(click(), lock, pan=[-0.4, 0.4, 0.0][i], gain=0.35, send=0.2)
+        place(bell([note("D5"), note("A5"), note("D6")][i], 1.8), lock,
+              pan=[-0.4, 0.4, 0.0][i], gain=0.1, send=0.5)
+    # souffle léger sous le tracé
+    place(whoosh(1.3, 400, 3000, 0.9), 0.0, pan=0.0, gain=0.08, send=0.2)
 
 
 def lifts():
-    """Décollage des trois cercles flottants."""
+    """Les cercles décollent puis se posent sur ré, fa, la : l'accord se construit."""
     for i, f0 in enumerate(F_LIFT):
         start = at(f0)
         rise = 22 / FPS
-        n = int((rise + 0.4) * SR)
+        target = [note("D5"), note("F5"), note("A5")][i]
+        place(whoosh(rise + 0.2, 250, 3500, 1.1), start, pan=0.3 * (1 if i % 2 else -1),
+              gain=0.16, send=0.3)
+        n = int(rise * SR)
         lt = np.arange(n) / SR
-        prog = np.clip(lt / rise, 0, 1)
-        whoosh = svf(RNG.standard_normal(n), 250 * (11 ** prog), 1.3, "band")
-        e = np.sin(np.pi * np.clip(lt / (rise + 0.3), 0, 1)) ** 1.5
-        place(whoosh * e, start, pan=np.linspace(-0.3, 0.3, n) * (1 if i % 2 else -1),
-              gain=0.25, send=0.3)
-        thrum = svf(RNG.standard_normal(n), 120 * (5 ** prog), 0.9)   # grondement sourd
-        place(thrum * e, start, gain=0.4, send=0.25)
-        if MUSIQUE:
-            place(bell([1174.66, 1396.91, 1760.0][i], 1.6, 0.7), start + 0.35,
-                  pan=[-0.35, 0.35, 0.0][i], gain=0.07, send=0.6)
-
-
-def sparkles():
-    """Crépitements aigus dont la densité suit la poussière de mana à l'écran."""
-    dust = [(at(4), 0.0), (at(26), 1.0), (at(F_FLASH - 4), 1.4), (at(F_FLASH), 2.3),
-            (at(F_FLASH + 12), 0.8), (at(FRAME_END - 4), 0.0)]
-    step = 0.005
-    for s in np.arange(0, DUR, step):
-        rate = 7.0 * float(np.interp(s, *zip(*dust)))
-        if RNG.random() < rate * step:
-            d = RNG.uniform(0.005, 0.025)
-            n = int(d * SR)
-            tick = svf(RNG.standard_normal(n), np.full(n, RNG.uniform(4000, 9000)), 3.0, "band")
-            tick *= np.exp(-np.arange(n) / (n / 4))
-            place(tick, s, pan=RNG.uniform(-0.9, 0.9), gain=RNG.uniform(0.08, 0.2), send=0.45)
+        prog = lt / rise
+        f = target / 2 ** (7 / 12) * 2 ** ((7 / 12) * np.sqrt(prog))   # glisse d'une quinte
+        glide = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.sin(np.pi * prog) ** 2
+        place(svf(glide, np.full(n, 3000.0)), start, gain=0.05, send=0.4)
+        # le cercle se pose : cloche + petit pincé à l'octave
+        place(bell(target, 1.6), start + rise, pan=[-0.5, 0.5, 0.0][i], gain=0.1, send=0.5)
+        place(crystal(target * 2, 0.4), start + rise + 0.05, pan=[-0.5, 0.5, 0.0][i],
+              gain=0.04, send=0.5)
 
 
 def charge():
-    """La colonne jaillit puis la mana se concentre jusqu'au flash."""
-    t0, tf = at(F_CHARGE), at(F_FLASH) - 0.02
+    """La colonne jaillit, puis le sort se charge jusqu'au flash."""
+    t0, tf = at(F_CHARGE), at(F_FLASH) - 0.025
     n = int((tf - t0) * SR)
     lt = np.arange(n) / SR
     prog = lt / (tf - t0)
-    end_fade = np.clip((tf - t0 - lt) / 0.01, 0, 1)
-    # jaillissement de la colonne : impact grave + grondement
-    m = int(0.6 * SR)
+    end = np.clip((tf - t0 - lt) / 0.008, 0, 1)
+    # « whoom » : la colonne sort du sol
+    m = int(0.8 * SR)
     lm = np.arange(m) / SR
-    thump = np.sin(2 * np.pi * np.cumsum(40 + 25 * np.exp(-lm / 0.08)) / SR) * np.exp(-lm / 0.25)
-    place(np.tanh(2 * thump), t0, gain=0.3, send=0.2)
-    roar = svf(RNG.standard_normal(n), 180 + 700 * np.minimum(prog * 1.8, 1), 0.8)
-    grow = 16 / (FPS * (tf - t0))
-    roar_env = np.where(prog < grow, (prog / grow) ** 0.7, 1.0 - 0.5 * (prog - grow) / (1 - grow))
-    place(roar * roar_env * end_fade, t0, gain=0.24, send=0.25)
-    # montée de hauteur avec trémolo qui accélère
-    f = expo(110, 880, n)
-    tone = svf(osc(f, n, "saw") + osc(f * 1.005, n), f * 4, 0.8)
-    trem = 0.6 + 0.4 * np.sin(2 * np.pi * np.cumsum(4 + 18 * prog ** 2) / SR)
-    place(tone * trem * prog ** 1.8 * end_fade, t0, gain=0.45, send=0.3)
+    whoom = np.sin(2 * np.pi * np.cumsum(38 + 45 * np.exp(-lm / 0.1)) / SR) * np.exp(-lm / 0.3)
+    place(np.tanh(2.0 * whoom), t0, gain=0.24, send=0.2)
+    place(whoosh(0.7, 150, 1800, 0.8), t0 - 0.05, gain=0.14, send=0.3)
+    # son de Shepard : des octaves qui montent sans fin, de plus en plus vite
+    octaves = 7
+    climb = np.cumsum(0.5 + 2.8 * prog ** 1.5) / SR
+    shep = np.zeros(n)
+    for k in range(octaves):
+        pos = (k + climb) % octaves
+        freq = 55.0 * 2 ** pos
+        weight = np.exp(-0.5 * ((pos - octaves / 2) / 1.3) ** 2)
+        shep += weight * np.sin(2 * np.pi * np.cumsum(freq) / SR)
+    place(shep * (0.3 + 0.7 * prog ** 1.2) * end, t0, gain=0.16, send=0.35)
+    # arpège de ré mineur qui accélère et monte, en ping-pong gauche/droite
+    rate = 6 + 26 * prog ** 1.4
+    beats = np.flatnonzero(np.diff(np.floor(np.cumsum(rate) / SR)) > 0)
+    for j, idx in enumerate(beats):
+        p = idx / n
+        fr = MINEUR[min(len(MINEUR) - 1, (j % 4) + int(p * 6))]
+        place(crystal(fr, 0.25), t0 + idx / SR, pan=0.6 if j % 2 else -0.6,
+              gain=0.05 + 0.05 * p, send=0.3)
+    # pulsations graves qui accélèrent (le cœur du sort)
+    beats = np.flatnonzero(np.diff(np.floor(np.cumsum(2.0 + 7.0 * prog ** 2) / SR)) > 0)
+    for idx in beats:
+        k = int(0.18 * SR)
+        lk = np.arange(k) / SR
+        thump = np.sin(2 * np.pi * np.cumsum(50 + 40 * np.exp(-lk / 0.02)) / SR) * np.exp(-lk / 0.07)
+        place(thump, t0 + idx / SR, gain=0.12 + 0.2 * idx / n, send=0.05)
     # souffle qui monte
-    riser = svf(RNG.standard_normal(n), expo(300, 7000, n), 0.9, "band")
-    place(riser * prog ** 1.8 * end_fade, t0, pan=0.0, gain=0.7, send=0.35)
-    # crépitements électriques de plus en plus serrés
-    step = 0.002
-    for s in np.arange(0, tf - t0, step):
-        rate = 4 + 70 * (s / (tf - t0)) ** 2
-        if RNG.random() < rate * step:
-            k = int(RNG.uniform(0.002, 0.009) * SR)
-            burst = svf(RNG.standard_normal(k), np.full(k, RNG.uniform(2000, 6500)), 2.0, "band")
-            place(burst * np.exp(-np.arange(k) / (k / 3)), t0 + s, pan=RNG.uniform(-1, 1),
-                  gain=RNG.uniform(0.08, 0.25), send=0.2)
-    # aspiration (souffle inversé) qui se termine pile avant l'impact
-    a = int(0.45 * SR)
-    rev = svf(RNG.standard_normal((2, a)).ravel(), np.full(2 * a, 3500.0), 0.7).reshape(2, a)
-    rev *= np.exp(-np.arange(a) / (0.12 * SR))
-    place(rev[:, ::-1] * 1.0, tf - 0.45, gain=0.4, send=0.3)
+    riser = svf(RNG.standard_normal(n), expo(400, 9000, n), 0.9, "band")
+    place(riser * prog ** 1.6 * end, t0, gain=0.26, send=0.35)
+    # l'accord final aspiré à l'envers, puis silence
+    a = int(0.5 * SR)
+    rev = impact_chord(a)[:, ::-1]
+    rev *= np.linspace(0, 1, a) ** 2
+    place(rev, tf - 0.5, gain=0.35, send=0.4)
+
+
+def impact_chord(n):
+    """Accord de ré majeur (avec la neuvième) en « supersaw » filtré."""
+    lt = np.arange(n) / SR
+    chord = np.zeros((2, n))
+    for name, amp in (("D3", 0.9), ("A3", 0.7), ("D4", 0.8), ("F#4", 0.6), ("A4", 0.55), ("E5", 0.35)):
+        chord += amp * supersaw(note(name), n)
+    cutoff = 700 + 5500 * np.exp(-lt / 0.35)
+    chord = np.vstack([svf(ch, cutoff, 0.8) for ch in chord])
+    return chord * np.exp(-lt / 0.9) * np.minimum(lt / 0.004, 1.0)
 
 
 def impact():
     """Image du flash : la téléportation."""
     tf = at(F_FLASH)
-    n = int(2.2 * SR)
+    n = int(2.6 * SR)
     lt = np.arange(n) / SR
-    boom = np.sin(2 * np.pi * np.cumsum(35 + 70 * np.exp(-lt / 0.12)) / SR)
-    boom = np.tanh(2.2 * boom * np.exp(-lt / 0.55)) * np.minimum(lt / 0.002, 1)
-    place(boom, tf, gain=0.95, send=0.25)
-    crack = svf(RNG.standard_normal((2, n)).ravel(), np.full(2 * n, 900.0), 0.7, "high").reshape(2, n)
-    place(crack * np.exp(-lt / 0.025), tf, gain=0.45, send=0.5)
-    body = svf(RNG.standard_normal((2, n)).ravel(), np.full(2 * n, 1500.0), 0.7).reshape(2, n)
-    place(body * np.exp(-lt / 0.35), tf, gain=0.5, send=0.7)
-    sizzle = svf(RNG.standard_normal((2, n)).ravel(), np.full(2 * n, 5000.0), 0.7, "high").reshape(2, n)
-    flicker = 0.4 + 2.5 * np.abs(svf(RNG.standard_normal(n), np.full(n, 60.0), 0.7))
-    place(sizzle * np.exp(-lt / 0.5) * flicker, tf, gain=0.16, send=0.6)
-    # onde de choc : souffle qui s'assombrit et s'ouvre en stéréo
-    m = int((16 / FPS + 0.4) * SR)
-    lm = np.arange(m) / SR
-    wave = svf(RNG.standard_normal((2, m)).ravel(), np.tile(expo(7000, 250, m), 2), 0.8).reshape(2, m)
-    place(wave * np.exp(-lm / 0.3), tf, gain=0.35, send=0.4)
+    # chute grave
+    drop = np.sin(2 * np.pi * np.cumsum(32 + 90 * np.exp(-lt / 0.15)) / SR)
+    place(np.tanh(2.5 * drop * np.exp(-lt / 0.6)) * np.minimum(lt / 0.002, 1), tf, gain=0.8, send=0.2)
+    # « shing » métallique + claquement
+    shing = fm(2200.0, 1.2, ratio=1.414, index=6.0, idecay=0.08, adecay=0.35)
+    place(shing, tf, gain=0.07, send=0.6)
+    m = int(0.2 * SR)
+    crack = svf(RNG.standard_normal((2, m)).ravel(), np.full(2 * m, 1200.0), 0.7, "high").reshape(2, m)
+    place(crack * np.exp(-np.arange(m) / (0.02 * SR)), tf, gain=0.35, send=0.4)
+    # l'accord de ré majeur s'ouvre
+    place(impact_chord(n), tf, gain=0.3, send=0.6)
+    # cascade de paillettes qui descend
+    for k in range(18):
+        fr = PENTA_MAJ[len(PENTA_MAJ) - 1 - (k % len(PENTA_MAJ))]
+        place(crystal(fr, 0.6), tf + 0.03 + k * 0.045 + RNG.uniform(0, 0.015),
+              pan=RNG.uniform(-0.8, 0.8), gain=0.045 * (1 - k / 22), send=0.55)
+    # onde de choc
+    w = int((16 / FPS + 0.4) * SR)
+    lw = np.arange(w) / SR
+    wave = svf(RNG.standard_normal((2, w)).ravel(), np.tile(expo(7000, 250, w), 2), 0.8).reshape(2, w)
+    place(wave * np.exp(-lw / 0.3), tf, gain=0.22, send=0.4)
 
 
-def collapse_and_fade():
-    """La colonne se resserre en un fil, puis les cercles se dissipent."""
+def vanish():
+    """La colonne devient un fil et disparaît : le voyageur est parti."""
     t0, t1 = at(F_FLASH + 6), at(F_FLASH + 18)
-    n = int((t1 - t0 + 0.1) * SR)
+    n = int((t1 - t0) * SR)
     lt = np.arange(n) / SR
-    whistle = svf(RNG.standard_normal(n), expo(2400, 300, n), 8.0, "band")
-    place(whistle * np.sin(np.pi * np.clip(lt / (t1 - t0), 0, 1)), t0, gain=0.3, send=0.4)
-    m = int(0.25 * SR)
-    puff = svf(RNG.standard_normal(m), np.full(m, 2000.0), 0.7) * np.exp(-np.arange(m) / (0.06 * SR))
-    place(puff, t1, gain=0.25, send=0.5)
-    if MUSIQUE:
-        place(bell(1760.0, 1.4, 0.5), t1, gain=0.06, send=0.7)
-    if MUSIQUE:  # cloches descendantes : le motif d'ouverture à l'envers
-        for k, (fr, pan) in enumerate(((880.0, 0.5), (698.46, 0.0), (587.33, -0.5))):
-            place(bell(fr, 2.0, 0.6), at(F_FLASH + 8 + 5 * k), pan=pan, gain=0.1, send=0.7)
-        place(bell(293.66, 3.0, 0.4), at(F_GONE - 12), gain=0.13, send=0.6)
+    prog = lt / (t1 - t0)
+    f = expo(note("A5"), note("D4"), n)
+    vwoop = np.sin(2 * np.pi * np.cumsum(f) / SR) + 0.25 * np.sin(4 * np.pi * np.cumsum(f) / SR)
+    place(vwoop * np.sin(np.pi * prog) ** 0.8, t0, gain=0.06, send=0.4)
+    place(click(0.008), t1, gain=0.3, send=0.3)
+    place(crystal(note("D7"), 0.8), t1, gain=0.05, send=0.7)
+    place(crystal(note("A6"), 0.8), t1 + 0.09, gain=0.03, send=0.7)
+    # dernières paillettes, de plus en plus rares
+    s = t1 + 0.2
+    while s < at(F_GONE):
+        place(crystal(PENTA_MAJ[RNG.integers(3, len(PENTA_MAJ))], 0.5), s,
+              pan=RNG.uniform(-0.9, 0.9), gain=0.02, send=0.6)
+        s += RNG.uniform(0.12, 0.3) * (1 + 2 * (s - t1) / (at(F_GONE) - t1))
 
 
-def reverb(x, seconds=2.4, rt60=2.0):
+def reverb(x, seconds=2.6, rt60=2.2):
     n = int(seconds * SR)
     lt = np.arange(n) / SR
     ir = RNG.standard_normal((2, n)) * np.exp(-6.9 * lt / rt60)
-    ir = np.vstack([svf(ch, np.full(n, 5000.0)) for ch in ir])
-    ir[:, : int(0.015 * SR)] = 0.0                     # pré-délai
+    ir = np.vstack([svf(ch, np.full(n, 6000.0)) for ch in ir])
+    ir[:, : int(0.02 * SR)] = 0.0                      # pré-délai
     ir /= np.sqrt((ir ** 2).sum(axis=1, keepdims=True))
     return np.vstack([fftconvolve(x[c], ir[c])[:N] for c in range(2)])
 
 
 def main():
-    if MUSIQUE:
-        drone()
     tracing()
     lifts()
-    sparkles()
     charge()
     impact()
-    collapse_and_fade()
+    vanish()
     mix = dry + 0.9 * reverb(wet)
     mix -= mix.mean(axis=1, keepdims=True)
     mix /= np.abs(mix).max()
-    mix = np.tanh(1.6 * mix) / np.tanh(1.6)            # saturation douce
+    mix = np.tanh(1.5 * mix) / np.tanh(1.5)            # saturation douce
     mix *= 0.89 / np.abs(mix).max()                     # crête à -1 dBFS
     fade = np.ones(N)
     fade[: int(0.005 * SR)] = np.linspace(0, 1, int(0.005 * SR))
